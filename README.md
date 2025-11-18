@@ -13,7 +13,7 @@ The layout and build scripts of this project assumes that...
    ```
    .\first_time_setup.bat
    ```
-   - The `windows_buiild.bat` script within Picinae assumes that you have installed Coq to the location `C:\Coq`. If you have installed Coq to a different location, you will need to modify the `windows_build.bat` script within the `Picinae` directory to point to your Coq installation location. 
+   - The `windows_build.bat` script within Picinae assumes that you have installed Coq to the location `C:\Coq`. If you have installed Coq to a different location, you will need to modify the `windows_build.bat` script within the `Picinae` directory to point to your Coq installation location. 
    - If your Coq installation is in a different location, then you will need to run `first_time_setup.bat` twice: once to clone Picinae, and then again to build Picinae (after you have modified the `windows_build.bat` script).
 
 2. **Build the atoi proof** (only non-Picinae files):
