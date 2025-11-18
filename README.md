@@ -4,7 +4,7 @@
 The layout and build scripts of this project assumes that...
 1. You are running **Coq 8.20**. If you are running a higher version, there is no guarantee that the build script will work, as the Picinae build scripts also assume the working version of Coq is 8.20.
 2. `coqc` in your `PATH` - Add Coq's `bin` directory to your system `PATH` environment variable.
-    - **Suggested Approach**: *Add a new System Environment variable named `COQ_HOME` and set it to the path of your Coq installation. Then, within the `PATH` environment variable, add a new entry named `%COQ_HOME%\bin`. This will allow you to run any of the Coq executables from the command line (which is reqruied for the build script).*
+    - **Suggested Approach**: *Add a new System Environment variable named `COQ_HOME` and set it to the path of your Coq installation. Then, within the `PATH` environment variable, add a new entry named `%COQ_HOME%\bin`. This will allow you to run any of the Coq executables from the command line (which is required for the build script).*
     - After adding the `PATH` variable, you can verify that your setup is correct by opening a new terminal and running the command `coqc -v` in the command line. If you see the version of Coq that you are expecting, then your setup is correct.
 
 ## Setup & Build (Windows)
@@ -13,7 +13,7 @@ The layout and build scripts of this project assumes that...
    ```
    .\first_time_setup.bat
    ```
-   - The `windows_buiild.bat` script within Picinae assumes that you have installed Coq to the location `C:\Coq`. If you have installed Coq to a different location, you will need to modify the `windows_build.bat` script within the `Picinae` directory to point to your Coq installation location.
+   - The `windows_build.bat` script within Picinae assumes that you have installed Coq to the location `C:\Coq`. If you have installed Coq to a different location, you will need to modify the `windows_build.bat` script within the `Picinae` directory to point to your Coq installation location.
    - If your Coq installation is in a different location, then you will need to run `first_time_setup.bat` twice: once to clone Picinae, and then again to build Picinae (after you have modified the `windows_build.bat` script).
 
 2. **Build the atoi proof** (only non-Picinae files):
