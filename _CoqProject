@@ -1,5 +1,12 @@
--R Picinae atoiProof
-Picinae
+-R Picinae Picinae
+Picinae/Picinae_core.v
+Picinae/Picinae_theory.v
+Picinae/Picinae_statics.v
+Picinae/Picinae_finterp.v
+Picinae/Picinae_simplifier_base.v
+Picinae/Picinae_simplifier_v1_1.v
+Picinae/Picinae_ISA.v
+Picinae/Picinae_armv8_pcode.v
 -R LiftedSource atoiProof
 LiftedSource
 -R Proofs atoiProof
