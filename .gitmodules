@@ -1,0 +1,3 @@
+[submodule "Picinae"]
+	path = Picinae
+	url = https://github.com/CharlesAverill/Picinae.git
