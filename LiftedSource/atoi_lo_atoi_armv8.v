@@ -12,6 +12,7 @@ Open Scope N.
 
 Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 
+(* Move the contents of register x0 to x1 *)
 (* 0x00100000: mov x1,x0 *)
 (*    1048576: mov x1,x0 *)
 | 0x100000 => Some (4,
@@ -19,6 +20,8 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	Move R_X1 (Var R_X0)
 )
 
+(* Load the 32-bit zero extended byte from the address pointed to be x1 to w0 *)
+(* w0 seems to be the current character we are looking at in the input string. *)
 (* 0x00100004: ldrb w0,[x1] *)
 (*    1048580: ldrb w0,[x1] *)
 | 0x100004 => Some (4,
@@ -30,6 +33,7 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	Move R_X0 (Cast CAST_UNSIGNED 64 (Var (V_TEMP 0x25500)))
 )
 
+(* w2 = w0 - 0x9 *)
 (* 0x00100008: sub w2,w0,#0x9 *)
 (*    1048584: sub w2,w0,#0x9 *)
 | 0x100008 => Some (4,
@@ -39,6 +43,7 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	Move R_X2 (Cast CAST_UNSIGNED 64 (Var (V_TEMP 0x3d080)))
 )
 
+(* Compare w0 and 0x20 (0x20 = 32, space in ascii) *)
 (* 0x0010000c: cmp w0,#0x20 *)
 (*    1048588: cmp w0,#0x20 *)
 | 0x10000c => Some (4,
@@ -64,6 +69,8 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	Move R_OV (Var R_TMPOV)
 )
 
+(* If w0 != 0x20, compare w2 and 0x4 (compare w0 and 13, CR in ascii) 
+    Else, zero out the NZCV flags (effectively, fail the comparison) *)
 (* 0x00100010: ccmp w2,#0x4,#0x0,ne *)
 (*    1048592: ccmp w2,#0x4,#0x0,ne *)
 | 0x100010 => Some (4,
@@ -117,6 +124,12 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	Move R_OV (Var R_TMPOV)
 )
 
+(* Branch if LS (C=0 or Z=1). The target is where we examine the next character
+   in the string (increment x1); so, I assume this is to skip over whitespace
+   in the input string. *)
+(* We will branch if:
+    1. w0 = 0x20 (the current character is a space)
+    2. w2 = 0x4 (the current character is a carriage return) *)
 (* 0x00100014: b.ls 0x0010003c *)
 (*    1048596: b.ls 0x0010003c *)
 | 0x100014 => Some (4,
@@ -132,6 +145,7 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	)
 )
 
+(* Compare w0 with 0x2b (43, the + sign in ascii) *)
 (* 0x00100018: cmp w0,#0x2b *)
 (*    1048600: cmp w0,#0x2b *)
 | 0x100018 => Some (4,
@@ -157,6 +171,7 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	Move R_OV (Var R_TMPOV)
 )
 
+(* Branch if w0 = 0x2b (the current character is the + sign). *)
 (* 0x0010001c: b.eq 0x00100044 *)
 (*    1048604: b.eq 0x00100044 *)
 | 0x10001c => Some (4,
@@ -168,6 +183,7 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	)
 )
 
+(* Compare w0 with 0x2d, the - sign in ascii *)
 (* 0x00100020: cmp w0,#0x2d *)
 (*    1048608: cmp w0,#0x2d *)
 | 0x100020 => Some (4,
