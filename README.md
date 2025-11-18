@@ -7,7 +7,7 @@ The layout and build scripts of this project assumes that...
     - **Suggested Approach**: *Add a new System Environment variable named `COQ_HOME` and set it to the path of your Coq installation. Then, within the `PATH` environment variable, add a new entry named `%COQ_HOME%\bin`. This will allow you to run any of the Coq executables from the command line (which is required for the build script).*
     - After adding the `PATH` variable, you can verify that your setup is correct by opening a new terminal and running the command `coqc -v` in the command line. If you see the version of Coq that you are expecting, then your setup is correct.
 
-## Setup & Build
+## Setup & Build (Windows)
 
 1. **First-time setup** (clones and builds Picinae):
    ```
@@ -25,6 +25,9 @@ The layout and build scripts of this project assumes that...
    ```
    .\clean.bat
    ```
+## Setup & Build (Linux)
+
+1. Run make. The makefile supports build targets **all** and **clean**.
 
 ## Project Structure
 ```
