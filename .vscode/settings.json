@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "*.v": "coq"
+    },
+    "files.exclude": {
+        "**/*.vo": true,
+        "**/*.vok": true,
+        "**/*.vos": true,
+        "**/*.glob": true,
+        "**/.coq-native": true
+    }
+}
