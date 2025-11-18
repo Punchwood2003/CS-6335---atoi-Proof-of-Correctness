@@ -1,3 +1,4 @@
+# Picinae project files
 -R Picinae Picinae
 Picinae/Picinae_core.v
 Picinae/Picinae_theory.v
@@ -7,7 +8,9 @@ Picinae/Picinae_simplifier_base.v
 Picinae/Picinae_simplifier_v1_1.v
 Picinae/Picinae_ISA.v
 Picinae/Picinae_armv8_pcode.v
+# Lifted Srouce file(s)
 -R LiftedSource atoiProof
 LiftedSource
+# Proofs
 -R Proofs atoiProof
 Proofs
