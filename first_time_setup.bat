@@ -1,36 +1,29 @@
 @echo off
 REM First-time setup script for atoi proofs
-REM (i) Clones Picinae into the local Picinae folder
-REM (ii) Builds Picinae source files
+REM Initializes git submodules and builds Picinae source files
 
 echo ========================================
 echo First Time Setup for atoi Proofs
 echo ========================================
 echo.
 
-REM Check if Picinae folder exists and has content
-if exist "Picinae\Picinae_core.v" (
-    echo Picinae already exists. Skipping clone.
-    echo If you want to re-clone, delete the Picinae folder first.
-) else (
-    echo Cloning Picinae from GitHub...
-    if exist "Picinae" (
-        rmdir /s /q "Picinae"
-    )
-    mkdir Picinae
-    cd Picinae
-    git init
-    git remote add origin https://github.com/CharlesAverill/Picinae.git
-    git fetch origin master
-    git checkout master
-    cd ..
-    if errorlevel 1 (
-        echo Error cloning Picinae repository
-        pause
-        exit /b 1
-    )
-    echo Picinae cloned successfully!
+REM Initialize and update git submodules (including Picinae)
+echo Initializing git submodules...
+git submodule update --init --recursive
+if errorlevel 1 (
+    echo Error initializing git submodules
+    pause
+    exit /b 1
 )
+
+REM Check if Picinae folder exists and has content
+if not exist "Picinae\Picinae_core.v" (
+    echo Error: Picinae submodule not found after initialization
+    pause
+    exit /b 1
+)
+
+echo Picinae submodule initialized successfully!
 
 echo.
 echo Building Picinae source files...
@@ -49,4 +42,3 @@ echo ========================================
 echo First-time setup completed successfully!
 echo ========================================
 echo You can now run windows_build.bat to build the atoi proofs.
-pause

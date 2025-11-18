@@ -9,20 +9,21 @@ The layout and build scripts of this project assumes that...
 
 ## Setup & Build (Windows)
 
-1. **First-time setup** (clones and builds Picinae):
-   ```
+1. **First-time setup** (initializes submodules and builds Picinae):
+   ```powershell
    .\first_time_setup.bat
    ```
+   - Picinae is included as a git submodule. `first_time_setup.bat` runs `git submodule update --init --recursive` to fetch the submodule and then builds the Picinae sources.
    - The `windows_build.bat` script within Picinae assumes that you have installed Coq to the location `C:\Coq`. If you have installed Coq to a different location, you will need to modify the `windows_build.bat` script within the `Picinae` directory to point to your Coq installation location.
    - If your Coq installation is in a different location, then you will need to run `first_time_setup.bat` twice: once to clone Picinae, and then again to build Picinae (after you have modified the `windows_build.bat` script).
 
 2. **Build the atoi proof** (only non-Picinae files):
-   ```
+   ```powershell
    .\windows_build.bat
    ```
 
 3. **Clean compiled files** (preserves Picinae):
-   ```
+   ```powershell
    .\clean.bat
    ```
 ## Setup & Build (Linux)
@@ -31,7 +32,7 @@ The layout and build scripts of this project assumes that...
 
 ## Project Structure
 ```
-├── Picinae/                    Cloned master branch from https://github.com/CharlesAverill/Picinae
+├── Picinae/                    Picinae is a git submodule (master branch of the upstream repo)
 ├── LiftedSource/               Lifted source file(s) provided by CS 6335 Staff
 │   └── atoi_lo_atoi_armv8.v
 ├── Proofs/                     Correctness proof for atoi
@@ -46,7 +47,7 @@ The layout and build scripts of this project assumes that...
 ## Notes
 - All `.v` files in `LiftedSource/` and `Proofs/` are automatically discovered and compiled
 - To add new lemmas, simply create `.v` files in `Proofs/Lemmas/` (no config updates needed)
-- To clean Picinae separately, run `cd Picinae` then `.\clean.bat`
+- To clean Picinae separately, run `cd Picinae` then `.\clean.bat` (Picinae contains its own clean script).
 - If you are having an issue with the source files not properly recognizing the imports, reload your VSCode or IDE window. For VSCode, you can do this by pressing `Ctrl+Shift+P` and then typing `Reload Window`.
 
 ## Acknowledgements
