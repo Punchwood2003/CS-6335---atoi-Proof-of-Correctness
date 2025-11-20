@@ -444,6 +444,7 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	Move R_X0 (Cast CAST_UNSIGNED 64 (Var (V_TEMP 0x2b900)))
 )
 
+(* return to the address denoted by register x30. *)
 (* 0x00100070: ret *)
 (*    1048688: ret *)
 | 0x100070 => Some (4,
