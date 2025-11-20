@@ -209,6 +209,7 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	Move R_OV (Var R_TMPOV)
 )
 
+(* If the current character is NOT a - sign, branch to set w3 = 0x0 to indicate the input is a non-negative number. *)
 (* 0x00100024: b.ne 0x00100074 *)
 (*    1048612: b.ne 0x00100074 *)
 | 0x100024 => Some (4,
@@ -222,6 +223,7 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	)
 )
 
+(* w3 = 0x1. This is to indicate that the input string denotes a negative number. *)
 (* 0x00100028: mov w3,#0x1 *)
 (*    1048616: mov w3,#0x1 *)
 | 0x100028 => Some (4,
@@ -229,6 +231,7 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	Move R_X3 (Word 0x1 64)
 )
 
+(* x1 = x1+0x1. We get here if the current character is a + or - sign, and this is to move to the next character. *)
 (* 0x0010002c: add x1,x1,#0x1 *)
 (*    1048620: add x1,x1,#0x1 *)
 | 0x10002c => Some (4,
@@ -248,6 +251,7 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	Move R_X1 (Var (V_TEMP 0x11f80))
 )
 
+(* w0 = 0x0 *)
 (* 0x00100030: mov w0,#0x0 *)
 (*    1048624: mov w0,#0x0 *)
 | 0x100030 => Some (4,
@@ -255,6 +259,7 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	Move R_X0 (Word 0x0 64)
 )
 
+(* w4 = 0xa *)
 (* 0x00100034: mov w4,#0xa *)
 (*    1048628: mov w4,#0xa *)
 | 0x100034 => Some (4,
@@ -269,6 +274,7 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	Jmp (Word 0x100058 64)
 )
 
+(* x1 = x1 + 0x1 *)
 (* 0x0010003c: add x1,x1,#0x1 *)
 (*    1048636: add x1,x1,#0x1 *)
 | 0x10003c => Some (4,
@@ -295,6 +301,7 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	Jmp (Word 0x100004 64)
 )
 
+(* w3 = 0x0, indicates the input string is a non-negative integer *)
 (* 0x00100044: mov w3,#0x0 *)
 (*    1048644: mov w3,#0x0 *)
 | 0x100044 => Some (4,
@@ -309,6 +316,7 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	Jmp (Word 0x10002c 64)
 )
 
+(* w0 = w0 * w4 *)
 (* 0x0010004c: mul w0,w0,w4 *)
 (*    1048652: mul w0,w0,w4 *)
 | 0x10004c => Some (4,
@@ -318,6 +326,7 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	Move R_X0 (Cast CAST_UNSIGNED 64 (Var (V_TEMP 0x2b380)))
 )
 
+(* x1 = x1 + 1, move to the next character *)
 (* 0x00100050: add x1,x1,#0x1 *)
 (*    1048656: add x1,x1,#0x1 *)
 | 0x100050 => Some (4,
@@ -337,6 +346,7 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	Move R_X1 (Var (V_TEMP 0x11f80))
 )
 
+(* w0 = w0 - w2 *)
 (* 0x00100054: sub w0,w0,w2 *)
 (*    1048660: sub w0,w0,w2 *)
 | 0x100054 => Some (4,
@@ -346,6 +356,7 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	Move R_X0 (Cast CAST_UNSIGNED 64 (Var (V_TEMP 0x3d780)))
 )
 
+(* Load the next character to be examined into w2. *)
 (* 0x00100058: ldrb w2,[x1] *)
 (*    1048664: ldrb w2,[x1] *)
 | 0x100058 => Some (4,
@@ -357,6 +368,7 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	Move R_X2 (Cast CAST_UNSIGNED 64 (Var (V_TEMP 0x25500)))
 )
 
+(* w2 = w2 - 0x30 *)
 (* 0x0010005c: sub w2,w2,#0x30 *)
 (*    1048668: sub w2,w2,#0x30 *)
 | 0x10005c => Some (4,
@@ -391,6 +403,8 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	Move R_OV (Var R_TMPOV)
 )
 
+(* Branch if LS (C=0 or Z=1). We branch if:
+	1. w2 = 0x9 *)
 (* 0x00100064: b.ls 0x0010004c *)
 (*    1048676: b.ls 0x0010004c *)
 | 0x100064 => Some (4,
@@ -406,6 +420,7 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	)
 )
 
+(* Branch if w3 =/= 0x0 *)
 (* 0x00100068: cbnz w3,0x00100070 *)
 (*    1048680: cbnz w3,0x00100070 *)
 | 0x100068 => Some (4,
@@ -419,6 +434,7 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	)
 )
 
+(* w0 = w0 * -1 *)
 (* 0x0010006c: neg w0,w0 *)
 (*    1048684: neg w0,w0 *)
 | 0x10006c => Some (4,
