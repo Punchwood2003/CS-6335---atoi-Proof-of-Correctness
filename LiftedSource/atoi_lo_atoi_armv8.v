@@ -69,8 +69,9 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	Move R_OV (Var R_TMPOV)
 )
 
-(* If w0 != 0x20, compare w2 and 0x4 (compare w0 and 13, CR in ascii) 
-    Else, zero out the NZCV flags (effectively, fail the comparison) *)
+(* If w0 != 0x20, compare w2 and 0x4 (compare w0 and 0xd, carriage return in ascii) 
+ Else, zero out the NZCV flags (we will branch if C = 0) *)
+(* Note that w2 = w0 - 0x9, so comparing w2 with 0x4 is comparing w0 with 0xd *)
 (* 0x00100010: ccmp w2,#0x4,#0x0,ne *)
 (*    1048592: ccmp w2,#0x4,#0x0,ne *)
 | 0x100010 => Some (4,
@@ -372,6 +373,7 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 )
 
 (* w2 = w2 - 0x30. If w2 holds an ascii character that is a digit (0x30 to 0x39), we obtain the digit's value here. *)
+(* Note that 0x30 is '0' and 0x39 is '9' *)
 (* 0x0010005c: sub w2,w2,#0x30 *)
 (*    1048668: sub w2,w2,#0x30 *)
 | 0x10005c => Some (4,
