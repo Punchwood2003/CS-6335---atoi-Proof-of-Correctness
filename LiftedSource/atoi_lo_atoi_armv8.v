@@ -129,8 +129,8 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
    in the string (increment x1); so, I assume this is to skip over whitespace
    in the input string. *)
 (* We will branch if:
-    1. w0 = 0x20 (the current character is a space)
-    2. w2 = 0x4 (the current character is a carriage return) *)
+	1. w0 = 0x20 (the current character is a space), or
+	2. w0 <= 0xd (carriage return in ASCII) *)
 (* 0x00100014: b.ls 0x0010003c *)
 (*    1048596: b.ls 0x0010003c *)
 | 0x100014 => Some (4,
