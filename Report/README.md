@@ -10,7 +10,7 @@ If you use **VSCode** or **VSCodium**, an extension is available which provides 
 
 ## Report Folder Structure
 ```
-└── Report/                     The folder containing all report-related artifacts
+└── Report/                     All report-related artifacts
     ├── report.pdf              The rendered report PDF
     └── report.tex              The primary LaTeX source file
 ```
