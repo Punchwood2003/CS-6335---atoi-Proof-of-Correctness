@@ -100,6 +100,76 @@ Section Invariants.
   Definition digits_to_value (j k : N) : Z :=
     digits_to_value_acc j 0 (N.to_nat k).
 
+  Definition bit_count_twos_complement (i : Z) : N :=
+    match i with 
+    | Z0 => 1
+    | Z.pos n => N.succ (N.log2_up (N.succ (Npos n)))
+    | Z.neg n => N.succ (N.log2_up (Npos n))
+    (*| Z.pos n => N.log2_up (Npos (n + 1)) + 1
+    | Z.neg n => N.log2_up (Npos n) + 1 *)
+    end.
+    
+    Compute bit_count_twos_complement (2).
+   
+  
+  Lemma pos_plus_succ: 
+    forall (p : positive), Z.pos (Pos.succ p) = Z.pos (p + 1).
+  Proof. 
+    intros. induction p0.
+    - reflexivity.
+    - reflexivity.
+    - reflexivity.
+  Qed.
+  
+  Lemma z_succ_of_n: 
+    forall (n: N), Z.of_N (N.succ n) = Z.succ (Z.of_N n).
+  Proof.
+    destruct n.
+    - reflexivity.
+    - simpl. apply pos_plus_succ.
+   Qed. 
+   
+
+
+  Lemma z_of_n_log2_up_comm: 
+    forall (n: N), Z.of_N (N.log2_up n) = Z.log2_up (Z.of_N n).
+  Proof.
+    induction n.
+    - reflexivity.
+    - simpl. admit. (*apply IHn. Search "log2". assumption. reflexivity.*)
+  Admitted.
+    
+  Lemma z_to_n_to_pos: 
+    forall (p: positive), Z.of_N (N.pos p) = Z.pos(p).
+  Proof.
+    reflexivity.
+  Qed.
+
+    
+  Lemma n_pos_succ_pos_comm: 
+    forall (p : positive), N.pos (Pos.succ p) = N.succ (N.pos p).
+  Proof.
+    reflexivity.
+  Qed.
+   
+  (* forall signed integers z, bit_count will return an N s.t. -(2^N) <= z < 2^N *)
+  Theorem bit_count_correctness: 
+    forall (i : Z) (n : N), bit_count_twos_complement i = n -> (signed_range n i).
+  Proof.
+    induction i. 
+    (* ZERO *)
+    - simpl; unfold signed_range. lia.
+    (* POSITIVE *)
+    - simpl; unfold signed_range. intros.     
+     rewrite <- H. rewrite z_succ_of_n. rewrite Z.pred_succ.
+      rewrite N.pred_succ. rewrite z_of_n_log2_up_comm. simpl. admit.
+    (* NEGATIVE *)
+    - simpl; unfold signed_range. intros. 
+    rewrite <- H. rewrite z_succ_of_n. rewrite Z.pred_succ.
+    rewrite N.pred_succ. rewrite z_of_n_log2_up_comm. simpl. Search "log2_up".
+    admit.
+  Admitted.
+
   (* ========== Post-condition ========== *)
   
   Definition postcondition (s : store) : Prop :=
