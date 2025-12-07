@@ -1,4 +1,4 @@
-(* Automatically generated with pcode2coq
+(* Automatically generated with pcode2coq + ixb's own hands
 arch: armv8
 file: atoi.lo
 function: atoi
@@ -69,6 +69,7 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	Move R_OV (Var R_TMPOV)
 )
 
+(*
 (* If w0 != 0x20, compare w2 and 0x4 (compare w0 and 0xd, carriage return in ascii) 
  Else, zero out the NZCV flags (we will branch if C = 0) *)
 (* Note that w2 = w0 - 0x9, so comparing w2 with 0x4 is comparing w0 with 0xd *)
@@ -124,6 +125,60 @@ Definition atoi_lo_atoi_armv8 : program := fun _ a => match a with
 	(* (register, 0x103, 1) COPY (register, 0x106, 1) *)
 	Move R_OV (Var R_TMPOV)
 )
+*)
+
+(* If w0 != 0x20, compare w2 and 0x4 (compare w0 and 0xd, carriage return in ascii) 
+ Else, zero out the NZCV flags (we will branch if C = 0) *)
+(* Note that w2 = w0 - 0x9, so comparing w2 with 0x4 is comparing w0 with 0xd *)
+(* 0x00100010: ccmp w2,#0x4,#0x0,ne *)
+(*    1048592: ccmp w2,#0x4,#0x0,ne *)
+| 0x100010 => Some (4,
+	(* (unique, 0x1680, 1) BOOL_NEGATE (register, 0x101, 1) *)
+	Move (V_TEMP 0x1680) (Var R_ZR) $;
+	(* (register, 0x100, 1) INT_EQUAL (unique, 0xe780, 1) , (const, 0x8, 1) *)
+	Move R_NG (Cast CAST_UNSIGNED 8 (BinOp OP_EQ (Word 0x0 8) (Word 0x8 8))) $;
+	(* (register, 0x101, 1) INT_EQUAL (unique, 0xe880, 1) , (const, 0x4, 1) *)
+	Move R_ZR (Cast CAST_UNSIGNED 8 (BinOp OP_EQ (Word 0x0 8) (Word 0x4 8))) $;
+	(* (register, 0x102, 1) INT_EQUAL (unique, 0xe980, 1) , (const, 0x2, 1) *)
+	Move R_CY (Cast CAST_UNSIGNED 8 (BinOp OP_EQ (Word 0x0 8) (Word 0x2 8))) $;
+	(* (unique, 0xea80, 1) INT_AND (unique, 0x19d00, 1) , (const, 0x1, 1) *)
+  Move (V_TEMP 0xea80) (BinOp OP_AND (Word 0x0 8) (Word 0x1 8)) $;
+	(* (register, 0x103, 1) INT_EQUAL (unique, 0xea80, 1) , (const, 0x1, 1) *)
+	Move R_OV (Cast CAST_UNSIGNED 8 (BinOp OP_EQ (Word 0x0 8) (Word 0x1 8))) $;
+	(*  ---  CBRANCH (ram, 0x100014, 8) , (unique, 0x19d80, 1) *)
+	If (Cast CAST_LOW 1 (Var (V_TEMP 0x1680))) (
+		Jmp (Word 0x100014 64)
+	) (* else *) (
+		Nop
+	) $;
+	(* (unique, 0x19e80, 4) INT_SUB (register, 0x4010, 4) , (const, 0x4, 4) *)
+	Move (V_TEMP 0x19e80) (BinOp OP_MINUS (Extract 31 0 (Var R_X2)) (Word 0x4 32)) $;
+	(* (register, 0x100, 1) COPY (register, 0x107, 1) *)
+	Move R_NG  (Cast CAST_UNSIGNED 8 (BinOp OP_SLT (Var (V_TEMP 0x19e80)) (Word 0x0 32)))$;
+	(* (register, 0x101, 1) COPY (register, 0x108, 1) *)
+	Move R_ZR  (Cast CAST_UNSIGNED 8 (BinOp OP_EQ (Var (V_TEMP 0x19e80)) (Word 0x0 32)))$;
+	(* (register, 0x102, 1) COPY (register, 0x105, 1) *)
+	Move R_CY  (Cast CAST_UNSIGNED 8 (BinOp OP_LE (Word 0x4 32) (Extract 31 0 (Var R_X2))))$;
+	(* (register, 0x103, 1) COPY (register, 0x106, 1) *)
+	Move R_OV (Cast CAST_LOW 8 
+  (BinOp OP_AND 
+    (BinOp OP_XOR 
+      (BinOp OP_AND 
+        (BinOp OP_RSHIFT (Extract 31 0 (Var R_X2)) (Word 31 32))
+        (Word 1 32)) 
+      (BinOp OP_AND 
+        (BinOp OP_RSHIFT 
+          (BinOp OP_MINUS (Extract 31 0 (Var R_X2)) (Word 0x4 32)) 
+          (Word 31 32)) 
+        (Word 1 32))) 
+      (BinOp OP_XOR 
+        (BinOp OP_XOR 
+          (BinOp OP_AND 
+            (BinOp OP_RSHIFT 
+              (BinOp OP_MINUS (Extract 31 0 (Var R_X2)) (Word 0x4 32)) (Word 31 32)) (Word 1 32)) 
+                (BinOp OP_AND (BinOp OP_RSHIFT (Word 0x4 32) (Word 31 32)) (Word 1 32))) (Word 1 32))))
+)
+
 
 (* Branch if LS (C=0 or Z=1). The target is where we examine the next character
    in the string (increment x1); so, I assume this is to skip over whitespace
