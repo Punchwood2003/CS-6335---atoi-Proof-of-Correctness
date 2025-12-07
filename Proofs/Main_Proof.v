@@ -45,7 +45,7 @@ Section Invariants.
 
   (* All bytes from index 0 to i-1 are whitespace, or i = 0. *)
   Definition all_whitespace_until (i : N) : Prop :=
-    is_whitespace (mem Ⓑ[p⊕i-1]) \/ i = 0.
+    is_whitespace (mem Ⓑ[p ⊕ i ⊖ 1]) \/ i = 0.
 
   (* A byte represents a decimal digit *)
   Definition is_digit (b : N) : Prop :=
@@ -57,28 +57,27 @@ Section Invariants.
 
   (* (* All bytes from index j to j⊕k-1 are digits *)
   Definition all_digits (j k : N) : Prop :=
-    ∀ i, i < k -> is_digit (mem Ⓑ[p⊕j⊕i]).
+    ∀ i, i < k -> is_digit (mem Ⓑ[p ⊕ j ⊕ i]).
 
   (* The byte at position k is not a digit (terminator) *)
   Definition non_digit_terminator (j k : N) : Prop :=
-    ¬(is_digit (mem Ⓑ[p⊕j⊕k])). *)
+    ¬(is_digit (mem Ⓑ[p ⊕ j ⊕ k])). *)
 
   (* ========== Specification Components ========== *)
   
   (* Index of first non-whitespace character *)
   Definition first_nonwhitespace (i : N) : Prop :=
-    all_whitespace_until i /\ ¬(is_whitespace (mem Ⓑ[p⊕i])).
+    all_whitespace_until i /\ ¬(is_whitespace (mem Ⓑ[p ⊕ i])).
 
   (* w3 encodes the sign: 1 for negative, 0 for non-negative *)
   Definition sign_indicator (i : N) (s : store) : Prop :=
-    (mem Ⓑ[p⊕i] = 0x2D /\ s R_X3 = 1 /\ s R_X1 = p + i + 1) \/  (* minus sign *)
-    (mem Ⓑ[p⊕i] = 0x2B /\ s R_X3 = 0 /\ s R_X1 = p + i + 1) \/ (* plus sign *)
-    (s R_X3 = 0 /\ s R_X1 = p + i).  (* no sign *)
+    (mem Ⓑ[p ⊕ i] = 0x2D /\ s R_X3 = 1) \/  (* minus sign *)
+    (mem Ⓑ[p ⊕ i] = 0x2B /\ s R_X3 = 0).    (* plus sign *)
 
   (* Index where digits start (after optional sign) *)
   Definition digit_start (i : N) (j : N) : Prop :=
-    (mem Ⓑ[p⊕i] = 0x2D \/ mem Ⓑ[p⊕i] = 0x2B) /\ j = i + 1 \/
-    is_digit (mem Ⓑ[p⊕i]) /\ j = i.
+    (mem Ⓑ[p ⊕ i] = 0x2D \/ mem Ⓑ[p ⊕ i] = 0x2B) /\ j = i + 1 \/
+    is_digit (mem Ⓑ[p ⊕ i]) /\ j = i.
 
   (* Number of digits following the sign *)
   (* Definition digit_count (j k : N) : Prop :=
@@ -90,7 +89,7 @@ Section Invariants.
     match remaining with
     | O => 0
     | S n' => 
-      Z.of_N (digit_value (mem Ⓑ[p⊕j⊕acc])) + 
+      Z.of_N (digit_value (mem Ⓑ[p ⊕ j ⊕ acc])) + 
       10 * (digits_to_value_acc j (acc + 1) n')
     end.
 
@@ -114,37 +113,81 @@ Section Invariants.
 
   Variable s0: store. (* Initial state *)
 
-  (* Invariant at entry point (0x100000): Initialize *)
+  (* 1048576 - Invariant at entry point
+     The only thing we know at the entry point is that x0 points to input string.
+     After the first instruction is executed, x1 will also point to the input string. *)
   Definition inv_entry (s : store) : Prop :=
-    s R_X0 = p.  (* x1 points to input string *)
+    s R_X0 = p.
 
   Definition atoi_pre t x' s' :=
-  startof t (x', s') = (Addr 0x100000, s0) /\ (* We start execution of atoi at 0x100000 *)
-  models arm8typctx s0 /\ (* The initial state is assumed to obey the typing context of arm8 *)
-  inv_entry s0.
+    startof t (x', s') = (Addr 0x100000, s0) /\ (* We start execution of atoi at 0x100000 *)
+    models arm8typctx s0 /\ (* The initial state is assumed to obey the typing context of arm8 *)
+    inv_entry s0.
 
   (* 1048580 - Invariant at whitespace-skipping loop 
      We've skipped i characters, haven't found non-whitespace yet *)
   Definition inv_whitespace_loop (i : N) (s : store) : Prop :=
     all_whitespace_until i /\
-    s R_X1 = p + i.
+    s R_X1 = p ⊕ i.
 
   (* 1048636 - Invariant at the first statement inside the whitespace-skipping loop *)
   (* If we are here, the current character should indeed be whitespace. *)
   Definition inv_inside_whitespace_loop (i : N) (s : store) : Prop :=
-    is_whitespace (mem Ⓑ[p⊕i]) /\
-    s R_X0 = mem Ⓑ[p+i] /\
-    s R_X1 = p + i.
+    is_whitespace (mem Ⓑ[p ⊕ i]) /\
+    s R_X0 = mem Ⓑ[p ⊕ i] /\
+    s R_X1 = p ⊕ i.
 
   (* 1048600 - Invariant at sign-check section
-     At this point we know the value of R_X1, which should hold the index of the first non-whitespace character.
-     We've identified first non-whitespace, now checking for sign *)
+     At this point we know how much whitespace there is.
+     R_X0 should hold the first non-whitespace character, and
+     R_X1 should hold the index of the first non-whitespace character. *)
   Definition inv_after_whitespace (i : N) (s : store) : Prop :=
     first_nonwhitespace i /\
-    s R_X0 = mem Ⓑ[p⊕i] /\
-    s R_X1 = p + i.
+    s R_X0 = mem Ⓑ[p ⊕ i] /\
+    s R_X1 = p ⊕ i.
 
-  (* Invariant at end (0x100070): Result finalized *)
+  (* 1048620 - Invariant after parsing an existing sign character.
+     If we are here, there for sure is a sign indicator. *)
+  Definition inv_sign_exists_incr (i : N) (s : store) : Prop :=
+    sign_indicator i s /\
+    first_nonwhitespace i.
+
+  (* 1048624 - Invariant placed right after processing the sign indicator (1048624). We know that EITHER:
+     1. A sign exists and R_X3 is either 0 or 1, or
+     2. A sign does not exist and R_X3 is 0. *)
+  Definition inv_post_sign (i : N) (s : store) : Prop :=
+    ((inv_sign_exists_incr i s /\ (s R_X3 = 0 \/ s R_X3 = 1)) \/ 
+    (¬(sign_indicator i s) /\ s R_X3 = 0)) /\
+    first_nonwhitespace i.
+
+  (* 1048664 - Invariant at digit-parsing loop: 
+     We're in the loop parsing digits. We know:
+     - which characters are whitespace/sign/digits
+     - how many digits we've processed so far (acc)
+     - the current position and what we're examining
+     - the sign indicator in X3
+     X0 contains a partial result (exact formula depends on implementation details) *)
+  Definition inv_digit_loop (i j k acc : N) (s : store) : Prop :=
+    inv_post_sign i s /\
+    digit_start i j /\
+(*     all_digits j k /\  (* we've seen k valid digits so far *) *)
+    acc <= k /\  (* acc is how many we've actually processed *)
+    s R_X1 = p ⊕ j ⊕ acc /\
+    s R_X4 = 10.   (* multiplier *)
+
+  (* 1048652 - Invariant at digit-computation phase
+     We've multiplied the accumulator by 10, now subtracting the digit value *)
+  Definition inv_digit_multiply (i j k acc : N) (s : store) : Prop :=
+    first_nonwhitespace i /\
+    sign_indicator i s /\
+    digit_start i j /\
+(*     all_digits j (acc + 1) /\  (* we know this digit is valid *) *)
+    acc < k /\
+    s R_X1 = p ⊕ j ⊕ acc /\
+    s R_X2 = digit_value (mem Ⓑ[s R_X1]) /\
+    s R_X4 = 10.
+
+  (* 1048688 - Invariant at return *)
   Definition inv_exit (i j k : N) (s : store) : Prop :=
     first_nonwhitespace i /\
     sign_indicator i s /\
@@ -155,43 +198,6 @@ Section Invariants.
     ((Z.lt result (Z.of_N 2147483648) \/ Z.gt result (Z.of_N 2147483647)) \/
     (Z.le 0 result /\ s R_X0 = Z.to_N result)).
 
-  (* Invariant placed right after processing the sign indicator (1048624) *)
-  (* The only possible values for w are 0 or 1 at this point. *)
-  (* We know the amount of whitespace. *)
-  (* We know if a sign exists, and that R_X1 was incremented one more time if one exists. *)
-  Definition inv_post_sign (i : N) (s : store) : Prop :=
-    (s R_X3 = 0 \/ s R_X3 = 1) /\
-    sign_indicator i s /\
-    inv_after_whitespace i s.
-
-  (* Invariant at digit-parsing loop (0x100058): 
-     We're in the loop parsing digits. We know:
-     - which characters are whitespace/sign/digits
-     - how many digits we've processed so far (acc)
-     - the current position and what we're examining
-     - the sign indicator in X3
-     X0 contains a partial result (exact formula depends on implementation details) *)
-  Definition inv_digit_loop (i j k acc : N) (s : store) : Prop :=
-    first_nonwhitespace i /\
-    sign_indicator i s /\
-    digit_start i j /\
-(*     all_digits j k /\  (* we've seen k valid digits so far *) *)
-    acc <= k /\  (* acc is how many we've actually processed *)
-    s R_X1 = p + j + acc /\
-    s R_X4 = 10.   (* multiplier *)
-
-  (* Invariant at digit-computation phase (0x10004c):
-     We've multiplied the accumulator by 10, now subtracting the digit value *)
-  Definition inv_digit_multiply (i j k acc : N) (s : store) : Prop :=
-    first_nonwhitespace i /\
-    sign_indicator i s /\
-    digit_start i j /\
-(*     all_digits j (acc + 1) /\  (* we know this digit is valid *) *)
-    acc < k /\
-    s R_X1 = p + j + acc /\
-    s R_X2 = digit_value (mem Ⓑ[p⊕j⊕acc]) /\
-    s R_X4 = 10.
-
   (* Unified invariant set at each checkpoint *)
   Definition atoi_invs (t : trace) : option Prop :=
     match t with
@@ -201,6 +207,7 @@ Section Invariants.
       | 1048580 => Some (∃ i, inv_whitespace_loop i s)
       | 1048636 => Some (∃ i, inv_inside_whitespace_loop i s)
       | 1048600 => Some (∀ i, inv_after_whitespace i s)
+      | 1048620 => Some (∀ i, inv_sign_exists_incr i s)
       | 1048624 => Some (∀ i, inv_post_sign i s)
 (*       | 1048652 => Some (∃ i w j k acc, inv_digit_multiply i j k acc s) *)
 (*       | 1048664 => Some (∃ i w j k acc, inv_digit_loop i j k acc s) *)
@@ -214,9 +221,14 @@ End Invariants.
 
 (* ========== Correctness Theorems ========== *)
 
-Check atoi_pre.
-
 Ltac step := time arm8_step; try exact I.
+
+(* A single byte will never have a value greater than 2^32. *)
+Lemma mod_too_big_to_matter:
+  forall p m, m Ⓑ[ p ] mod 2 ^ 32 = m Ⓑ[ p ].
+Proof.
+  intros. apply getmem_mod with (w:=64) (e:=LittleE) (n2:=4) (n1:=1) (m:=m) (a:=p).
+Qed.
 
 Theorem atoi_partial_correctness:
   forall s t s' x' mem p 
@@ -225,11 +237,11 @@ Theorem atoi_partial_correctness:
   satisfies_all atoi_lo_atoi_armv8 (atoi_invs mem p) atoi_exit ((x',s')::t).
 Proof.
   intros. destruct PRE as (ENTRY & MDL & RX1). unfold inv_entry in RX1. apply prove_invs.
-  
+
   (* Base Case: Entry, 1048576 *)
   Print inv_entry.
   simpl. rewrite ENTRY. step. assumption.
-  
+
   (* Set up the inductive case *)
   intros. erewrite startof_prefix in ENTRY; try eassumption.
   eapply models_at_invariant; try eassumption. apply atoi_welltyped. intro MDL1.
@@ -250,95 +262,74 @@ Proof.
     and that there exists j whitespace bytes *)
     admit.
 
-  (* 1048600 -> 1048624 *)
-  (* After processing the sign indictor (if any), the only possible values of R_X3 are 0 or 1. *)
-  unfold inv_after_whitespace, first_nonwhitespace, all_whitespace_until in PRE. 
+  (* 1048600 -> 1048620 and 1048600 -> 1048624 *)
+  unfold inv_after_whitespace, first_nonwhitespace, all_whitespace_until in PRE.
   step. step.
-    (* BC: Character is a plus sign *)
-    step. step. step. intros. specialize PRE with (i:=i). 
-    destruct PRE as (WS & REG); destruct WS as (NUMWS & NONWS); destruct REG as (X0 & X1).
-    unfold inv_post_sign; split.
-      (* R_X3 holds either 0 or 1. *)
-      psimpl. left; reflexivity.
-      split.
-        (* According to BC, we have seen a plus sign and incremented R_X1. *)
-        unfold sign_indicator. psimpl. right. left. split.
-          apply Neqb_ok in BC. rewrite X0 in BC. admit. admit.
-        (* We know how much whitespace there is, and therefore the value R_X0 holds. *)
-        unfold inv_after_whitespace, first_nonwhitespace, all_whitespace_until. split. split; assumption.
-        split; psimpl. admit. admit. (* i don't know why the goal is asking for 1 + s R_X1 *)
-    (* BC: Character is NOT a plus sign *)
-    step. step. step. step. intros. specialize PRE with (i:=i). 
-    destruct PRE as (WS & REG); destruct WS as (NUMWS & NONWS); destruct REG as (X0 & X1).
-    unfold inv_post_sign; split.
-      (* R_X3 holds either 0 or 1. *)
-      psimpl. right; reflexivity.
-      split.
-      (* According to BC0, we have seen a minus sign and incremented R_X1. *)
-      admit.
-      (* We know how much whitespace there is, and therefore the value R_X0 holds. *)
-      admit.
-    (* BC: Character is NOT a plus sign and is NOT a minus sign *)
+    (* BC: Character is a plus sign, so we know a sign exists. *)
     step. step. intros. specialize PRE with (i:=i). 
     destruct PRE as (WS & REG); destruct WS as (NUMWS & NONWS); destruct REG as (X0 & X1).
-    unfold inv_post_sign; split.
-      (* R_X3 holds either 0 or 1. *)
-      psimpl. left; reflexivity.
-      split.
-      (* According to BC and BC0, there is no valid sign indicator and R_X1 remains as is. *)
-      unfold sign_indicator. psimpl. right. right. split; try reflexivity. assumption.
-      (* We know how much whitespace there is, and therefore the value R_X0 holds. *)
-      unfold inv_after_whitespace, first_nonwhitespace, all_whitespace_until. split. split; assumption.
-      split; psimpl. 
-        admit.
+    unfold inv_sign_exists_incr. unfold sign_indicator. split. right. split.
+      (* The current character is in fact a plus sign *)
+      apply Neqb_ok in BC. rewrite X0 in BC. rewrite mod_too_big_to_matter in BC. assumption.
+      (* R_X3 is equal to 0 because this is a plus sign (positive number). *)
+      psimpl; reflexivity.
+      (* Our knowledge of the whitespace still holds. *)
+      unfold first_nonwhitespace, all_whitespace_until. repeat split; assumption.
+    (* BC: Character is NOT a plus sign *)
+    step. step.
+      (* BC0: Character is a minus sign *)
+      step. intros. specialize PRE with (i:=i). 
+      destruct PRE as (WS & REG); destruct WS as (NUMWS & NONWS); destruct REG as (X0 & X1).
+      unfold inv_sign_exists_incr. unfold sign_indicator. split. left. split.
+        (* The current character is in fact a minus sign *)
+        apply Neqb_ok in BC0. rewrite X0 in BC0. rewrite mod_too_big_to_matter in BC0. assumption.
+        (* The current character is in fact a minus sign *)
+        psimpl; reflexivity.
+        (* Our knowledge of the whitespace still holds. *)
+        unfold first_nonwhitespace, all_whitespace_until. split; assumption.
+      (* BC0: Character is NOT a minus sign *)
+      step. step. intros. specialize PRE with (i:=i). 
+      destruct PRE as (WS & REG); destruct WS as (NUMWS & NONWS); destruct REG as (X0 & X1).
+      unfold inv_post_sign. (* At this point, there is no sign indicator. *) split. right. split.
+        (* There is no sign indicator. *)
+        unfold sign_indicator.
+        apply N.eqb_neq in BC. rewrite X0 in BC. rewrite mod_too_big_to_matter in BC.
+        apply N.eqb_neq in BC0. rewrite X0 in BC0. rewrite mod_too_big_to_matter in BC0.
+        psimpl. psimpl in BC. psimpl in BC0. tauto. (* trust me bro *)
+        (* R_X3 = 0 because there is no sign indicator. *)
+        psimpl; reflexivity.
+        (* Our knowledge of the whitespace still holds. *)
+        unfold first_nonwhitespace, all_whitespace_until. split; assumption.
+
+  (* 1048620 -> 1048624: There is a sign indicator. *)
+  step. intros. unfold inv_sign_exists_incr, sign_indicator in PRE; specialize PRE with (i:=i); destruct PRE as (SIGN & WS).
+  unfold inv_post_sign. split. left. split.
+    (* There is a sign indicator. *)
+    unfold inv_sign_exists_incr, sign_indicator. destruct SIGN; destruct H as (SIGN & X3).
+      (* The sign indicator was a minus sign. *)
+      split. left. split.
+        (* The sign indicator was in fact, a minus sign ! *)
+        assumption. 
+        (* R_X3 holds 1 because this is a negative number ! *)
+        psimpl; assumption.
+        (* Our knowledge about the whitespace still holds. *)
         assumption.
+      (* The sign indicator was a plus sign. *)
+      split. right. split.
+        (* The sign indicator was in fact, a plus sign ! *)
+        assumption. 
+        (* R_X3 holds 0 because this is a positive number ! *)
+        psimpl; assumption.
+        (* Our knowledge about the whitespace still holds. *)
+        assumption.
+    (* R_X3 holds 0 or 1. *)
+    psimpl. destruct SIGN.
+      (* R_X3 holds 1 if the sign was negative, 0 otherwise. *)
+      destruct H. right; assumption.
+      destruct H. left; assumption.
+    (* Our knowledge of the whitespace still holds. *)
+    assumption.
 
-  (* 1048624 -> 1048688 or 1048624 -> 1048652 *)
-  step. step. step. unfold inv_digit_loop.
+  (* 1048624 -> 1048664 *)
+  unfold inv_post_sign in PRE.
 
-(*
-(* Main correctness theorem: 
-   The lifted atoi program satisfies the specification at all trace endpoints *)
-Theorem atoi_correctness :
-  forall mem p,
-    forall_traces_in atoi_lo_atoi_armv8 (fun t => atoi_exit t -> (atoi_invs mem p) t).
-Proof.
-  intros mem p.
-  (* Unfold the definition of forall_traces_in *)
-  unfold forall_traces_in.
-  intros t XP.
-  (* XP : exec_prog atoi_lo_atoi_armv8 t *)
-  (* Goal: atoi_exit t -> atoi_invs mem p t *)
-  intro EXIT.
-  (* EXIT : atoi_exit t *)
-  (* Goal: atoi_invs mem p t *)
-  
-  (* Unfold atoi_exit to understand what it means *)
-  unfold atoi_exit in EXIT.
-  (* At the exit point, we should be at address 0x100070 *)
-  
-  (* The strategy is to trace backwards through the execution,
-     verifying that invariants are maintained at each checkpoint *)
-  
-  (* For now, we'll admit the main proof and focus on the structure *)
-  admit.
-Admitted.
-
-(* Memory preservation: atoi does not corrupt memory *)
-Theorem atoi_preserves_memory :
-  forall_endstates atoi_lo_atoi_armv8 
-    (fun _ s _ s' => s V_MEM64 = s' V_MEM64).
-Proof.
-  apply noassign_prog_same.
-  prove_noassign.
-Qed.
-
-(* Call safety: atoi does not corrupt the return address register *)
-Theorem atoi_preserves_lr :
-  forall_endstates atoi_lo_atoi_armv8 
-    (fun _ s _ s' => s R_X30 = s' R_X30).
-Proof.
-  apply noassign_prog_same.
-  prove_noassign.
-Qed.
-*)
