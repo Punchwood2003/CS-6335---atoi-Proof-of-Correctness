@@ -109,7 +109,7 @@ Section Invariants.
     | Z.neg n => N.log2_up (Npos n) + 1 *)
     end.
     
-    Compute bit_count_twos_complement (2).
+  Compute bit_count_twos_complement (2).
    
   
   Lemma pos_plus_succ: 
@@ -136,8 +136,11 @@ Section Invariants.
   Proof.
     induction n.
     - reflexivity.
-    - simpl. admit. (*apply IHn. Search "log2". assumption. reflexivity.*)
-  Admitted.
+    - simpl. destruct (N.pos p0) eqn:Hp.
+      + simpl. discriminate.
+      + unfold N.log2_up, Z.log2_up. 
+    admit.
+  Admitted. (* Charles said to admit for the time being *)
     
   Lemma z_to_n_to_pos: 
     forall (p: positive), Z.of_N (N.pos p) = Z.pos(p).
@@ -151,7 +154,17 @@ Section Invariants.
   Proof.
     reflexivity.
   Qed.
-   
+  
+  Print Z.log2_up_pow2.
+  Lemma z_pow2_log2_up:
+    forall (a: Z), (0 < a)%Z -> (2 ^ (Z.log2_up a))%Z = a.
+  Proof.
+    intros. induction a.
+    - discriminate.
+    - simpl. unfold Z.log2_up. simpl. admit.
+    - simpl. discriminate.
+  Admitted.
+       
   (* forall signed integers z, bit_count will return an N s.t. -(2^N) <= z < 2^N *)
   Theorem bit_count_correctness: 
     forall (i : Z) (n : N), bit_count_twos_complement i = n -> (signed_range n i).
@@ -162,13 +175,20 @@ Section Invariants.
     (* POSITIVE *)
     - simpl; unfold signed_range. intros.     
      rewrite <- H. rewrite z_succ_of_n. rewrite Z.pred_succ.
-      rewrite N.pred_succ. rewrite z_of_n_log2_up_comm. simpl. admit.
+      rewrite N.pred_succ. simpl. split. (* rewrite z_of_n_log2_up_comm. simpl. split.*)
+      + lia.
+      + rewrite n_pos_succ_pos_comm. rewrite z_of_n_log2_up_comm. rewrite z_pow2_log2_up.
+       -- lia.
+       -- lia.
     (* NEGATIVE *)
     - simpl; unfold signed_range. intros. 
-    rewrite <- H. rewrite z_succ_of_n. rewrite Z.pred_succ.
-    rewrite N.pred_succ. rewrite z_of_n_log2_up_comm. simpl. Search "log2_up".
-    admit.
-  Admitted.
+      rewrite <- H. rewrite z_succ_of_n. rewrite Z.pred_succ.
+      rewrite N.pred_succ. simpl. split.
+      + rewrite z_of_n_log2_up_comm. simpl. rewrite z_pow2_log2_up.
+        -- lia.
+        -- lia.
+      + lia.
+  Qed.
 
   (* ========== Post-condition ========== *)
   
