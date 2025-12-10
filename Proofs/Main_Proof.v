@@ -55,13 +55,13 @@ Section Invariants.
   Definition digit_value (b : N) : N :=
     b - 0x30.
 
-  (* (* All bytes from index j to j⊕k-1 are digits *)
+  (* All bytes from index j to j⊕k-1 are digits *)
   Definition all_digits (j k : N) : Prop :=
     ∀ i, i < k -> is_digit (mem Ⓑ[p ⊕ j ⊕ i]).
 
   (* The byte at position k is not a digit (terminator) *)
   Definition non_digit_terminator (j k : N) : Prop :=
-    ¬(is_digit (mem Ⓑ[p ⊕ j ⊕ k])). *)
+    ¬(is_digit (mem Ⓑ[p ⊕ j ⊕ k])).
 
   (* ========== Specification Components ========== *)
   
@@ -173,7 +173,7 @@ Section Invariants.
      X0 contains a partial result (exact formula depends on implementation details) *)
   Definition inv_digit_loop (i j k acc : N) (s : store) : Prop :=
     inv_post_sign i j s /\
-(*     all_digits j k /\  (* we've seen k valid digits so far *) *)
+    all_digits j k /\  (* we've seen k valid digits so far *)
     acc <= k /\  (* acc is how many we've actually processed *)
     s R_X1 = p ⊕ j ⊕ acc /\
     s R_X4 = 10.   (* multiplier *)
@@ -184,7 +184,7 @@ Section Invariants.
     first_nonwhitespace i /\
     sign_indicator_exists i s /\
     digit_start i j s /\
-(*     all_digits j (acc + 1) /\  (* we know this digit is valid *) *)
+    all_digits j (acc + 1) /\  (* we know this digit is valid *)
     acc < k /\
     s R_X1 = p ⊕ j ⊕ acc /\
     s R_X2 = digit_value (mem Ⓑ[s R_X1]) /\
@@ -208,11 +208,11 @@ Section Invariants.
       match a with
       | 1048576 => Some (inv_entry s)
       | 1048580 => Some (∃ i, inv_whitespace_loop i s)
-      | 1048636 => Some (∃ i, inv_inside_whitespace_loop i s)
+      | 1048636 => Some (∀ i, inv_inside_whitespace_loop i s)
       | 1048600 => Some (∀ i, inv_after_whitespace i s)
       | 1048620 => Some (∀ i, ∃ j, inv_sign_exists i j s)
       | 1048624 => Some (∀ i, ∃ j, inv_post_sign i j s)
-(*       | 1048652 => Some (∃ i w j k acc, inv_digit_multiply i j k acc s) *)
+      | 1048652 => Some (∀ i k acc, ∃ j, inv_digit_multiply i j k acc s)
       | 1048664 => Some (∀ i, ∃ j k acc, inv_digit_loop i j k acc s)
 (*       | 1048688 => Some (postcondition s) *)
       | _ => None  (* other addresses are unconstrained *)
@@ -342,7 +342,6 @@ Proof.
         destruct H. right; assumption.
         destruct H. left; assumption.
     (* We know the index of digit start. *)
-    (* TODO - Convince Coq that a sign must exist at this point *)
     destruct DIGIT.
       (* A sign indicator exists; the index of digit start is just after this sign indicator. *)
       split.
@@ -351,40 +350,52 @@ Proof.
           destruct H. assumption.
         psimpl. destruct H. subst. rewrite X1. psimpl; reflexivity.
       (* A sign indicator does NOT exist. *)
-        (* uh... well this shouldn't happen so if we have goals for that here we forgot to eliminate the
-           possibility of this case *) admit.
+      destruct H. contradiction.
 
   (* 1048624 -> 1048664 *)
   step. step. step. intros. 
   specialize PRE with (i:=i); unfold inv_post_sign, inv_sign_exists, sign_indicator_exists in PRE.
-  psimpl in PRE. destruct PRE; destruct H as (PRE & DSTART). destruct PRE.
+  psimpl in PRE. destruct PRE; destruct H as (PRE & DSTART). rename x into j. destruct DSTART as (DSTART & X1).
+  destruct PRE.
   (* Sign indicator exists. *)
-  exists x, 0, 0. unfold inv_digit_loop. split.
+  exists j, 0, 0. unfold inv_digit_loop. split.
     (* We know inv_post_sign still holds despite R_X0 and R_X4 being changed. *)
     unfold inv_post_sign. split. 
-      unfold inv_sign_exists, sign_indicator_exists. psimpl. left. assumption. assumption.
-      split.
-        apply N.le_refl.
-        psimpl. split.
-          (* Stuck - need to prove something about the value of 
-             R_X1 in the prior invariants. *)
-          unfold digit_start, first_nonwhitespace in DSTART. 
-          destruct DSTART; destruct H1. destruct H1. subst. psimpl. admit.
-          subst. admit.
-          reflexivity.
+      unfold sign_indicator_exists. psimpl. left. assumption.
+      split; assumption.
+    (* We have seen k=0 valid digits so far. *)
+    split.
+      unfold all_digits. intros. apply N.nlt_0_r in H0. exfalso; assumption.
+    split.
+      apply N.le_refl.
+      psimpl. split.
+        assumption.
+        reflexivity.
   (* Sign indicator does not exist. *)
-  exists x, 0, 0. unfold inv_digit_loop. split.
+  exists j, 0, 0. unfold inv_digit_loop. split.
     (* We know inv_post_sign still holds despite R_X0 and R_X4 being changed. *)
     unfold inv_post_sign. split. 
-      unfold inv_sign_exists, sign_indicator_exists. psimpl. right. assumption. assumption.
-      split.
-        apply N.le_refl.
-        psimpl. split.
-          (* Stuck - need to prove something about the value of 
-             R_X1 in the prior invariants. *)
-          unfold digit_start, first_nonwhitespace in DSTART. 
-          destruct DSTART; destruct H1. destruct H1. subst. psimpl. admit.
-          subst. admit.
-          reflexivity.
-          
+      unfold inv_sign_exists, sign_indicator_exists. psimpl. right. assumption. 
+      split; assumption.
+    (* We have seen k=0 valid digits so far. *)
+    split.
+      unfold all_digits. intros. apply N.nlt_0_r in H0. exfalso; assumption.
+    split.
+      apply N.le_refl.
+      psimpl. split.
+        assumption. 
+        reflexivity.
 
+  (* 1048636 -> 1048580 - From inside whitespace loop back to the start of it*)
+  step. step. 
+  specialize PRE with (i:=0). destruct PRE; psimpl in H. destruct H0.
+  unfold inv_whitespace_loop, all_whitespace_until. exists 1. split.
+    left. psimpl; assumption.
+    psimpl. rewrite H1. psimpl; reflexivity.
+
+  (* 1048652 -> 1048664 *)
+  step. step. step. admit.
+
+  (* 1048664 -> 1048652 and 1048664 -> EXIT *)
+  admit.
+Admitted.
