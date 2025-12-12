@@ -124,6 +124,13 @@ Section Invariants.
     acc <= k /\  (* acc is how many we've actually processed *)
     s R_X1 = p ⊕ j ⊕ acc /\
     s R_X4 = 10.   (* multiplier *)
+
+  (* 1048688 (0x100070) - Exit postcondition
+     At this point, R_X0 should contain the result that matches
+     the Gallina specification atoi function.
+     This connects the binary implementation to the trusted specification. *)
+  Definition inv_exit (w d : nat) (s : store) : Prop :=
+    Z.of_N (s R_X0) = atoi mem p w d.
   
   (* Unified invariant set at each checkpoint *)
   Definition atoi_invs (t : trace) : option Prop :=
@@ -138,7 +145,7 @@ Section Invariants.
       | 1048624 => Some (∀ i, ∃ j, inv_post_sign i j s)
       | 1048652 => Some (∀ i k acc, ∃ j, inv_digit_multiply i j k acc s)
       | 1048664 => Some (∀ i, ∃ j k acc, inv_digit_loop i j k acc s)
-      (* | 1048688 => Some (postcondition s) *)
+      | 1048688 => Some (∃ w d, inv_exit w d s)
       | _ => None  (* other addresses are unconstrained *)
       end
     | _ => None
