@@ -21,25 +21,13 @@ Section Invariants.
 
   (* ========== Helper Predicates ========== *)
 
-  (* A byte is whitespace: 0x09-0x0d (tab through carriage return) or 0x20 (space) *)
-  Definition is_whitespace (b : N) : Prop :=
-    (0x09 <= b /\ b <= 0x0d) \/ b = 0x20.
-
   (* All bytes from index 0 to i-1 are whitespace, or i = 0. *)
   Definition all_whitespace_until (i : N) : Prop :=
     is_whitespace (mem Ⓑ[p ⊕ i ⊖ 1]) \/ i = 0.
 
-  (* A byte represents a decimal digit *)
-  Definition is_digit (b : N) : Prop :=
-    0x30 <= b /\ b <= 0x39.
-
   (* All bytes from index j to j⊕k-1 are digits *)
   Definition all_digits (j k : N) : Prop :=
     ∀ i, i < k -> is_digit (mem Ⓑ[p ⊕ j ⊕ i]).
-
-  (* Convert ASCII digit to numeric value *)
-  Definition digit_value (b : N) : N :=
-    b - 0x30.
 
   (* ========== Specification Components ========== *)
 

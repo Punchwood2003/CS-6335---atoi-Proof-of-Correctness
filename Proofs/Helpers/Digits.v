@@ -20,3 +20,11 @@ Fixpoint handle_digits (mem:memory) (p:addr) (k:nat) (val:nat) :=
     | digit => handle_digits mem (p+1) k' (val*10 + N.to_nat(mem Ⓑ[p]))
     end
   end.
+
+(* A byte represents a decimal digit *)
+Definition is_digit (b : N) : Prop :=
+  0x30 <= b /\ b <= 0x39.
+
+(* Convert ASCII digit to numeric value *)
+Definition digit_value (b : N) : N :=
+  b - 0x30.

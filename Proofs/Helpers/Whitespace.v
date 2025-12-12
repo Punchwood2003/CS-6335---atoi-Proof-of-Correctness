@@ -26,3 +26,7 @@ Fixpoint handle_whitespace (mem:memory) (p:addr) (k:nat) :=
     | whitespace => handle_whitespace mem (p+1) k' (* move to next place *)
     end
   end.
+
+(* A byte is whitespace: 0x09-0x0d (tab through carriage return) or 0x20 (space) *)
+Definition is_whitespace (b : N) : Prop :=
+  (0x09 <= b /\ b <= 0x0d) \/ b = 0x20.

@@ -74,7 +74,6 @@ Proof.
   intros. destruct PRE as (ENTRY & MDL & RX1). unfold inv_entry in RX1. apply prove_invs.
 
   (* Base Case: Entry, 1048576 *)
-  Print inv_entry.
   simpl. rewrite ENTRY. step. assumption.
 
   (* Set up the inductive case *)

@@ -6,7 +6,6 @@ Require Import NArith.
 Require Import ZArith.
 Require Import Lia.
 Require Import Whitespace.
-Require Import Digits.
 Import ARM8Notations.
 
 Open Scope Z.
