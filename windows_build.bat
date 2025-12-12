@@ -1,6 +1,6 @@
 @echo off
 REM Build script for atoi proofs - uses root _CoqProject
-REM Compiles all non-Picinae files: lifted source, lemmas, and main proof
+REM Compiles all non-Picinae files: lifted source, helpers, and main proof
 
 REM Check if Picinae has been compiled
 if not exist "Picinae\Picinae_armv8_pcode.vo" (
@@ -20,17 +20,54 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Compile lemmas with their namespaces
-echo Compiling Proofs/Lemmas/basic_properties.v...
-coqc -R Picinae Picinae -R Proofs atoiProof Proofs/Lemmas/basic_properties.v
+REM Compile helpers in dependency order
+echo Compiling Helpers...
+
+echo   Whitespace.v...
+coqc -R Picinae Picinae -R Proofs/Helpers atoiProof.Helpers Proofs/Helpers/Whitespace.v
 if errorlevel 1 (
-    echo Error compiling basic_properties.v
+    echo Error compiling Whitespace.v
+    exit /b 1
+)
+
+echo   Digits.v...
+coqc -R Picinae Picinae -R Proofs/Helpers atoiProof.Helpers Proofs/Helpers/Digits.v
+if errorlevel 1 (
+    echo Error compiling Digits.v
+    exit /b 1
+)
+
+echo   Sign.v...
+coqc -R Picinae Picinae -R Proofs/Helpers atoiProof.Helpers Proofs/Helpers/Sign.v
+if errorlevel 1 (
+    echo Error compiling Sign.v
+    exit /b 1
+)
+
+echo   BitWidth.v...
+coqc -R Picinae Picinae -R Proofs/Helpers atoiProof.Helpers Proofs/Helpers/BitWidth.v
+if errorlevel 1 (
+    echo Error compiling BitWidth.v
+    exit /b 1
+)
+
+echo   Specification.v...
+coqc -R Picinae Picinae -R Proofs/Helpers atoiProof.Helpers Proofs/Helpers/Specification.v
+if errorlevel 1 (
+    echo Error compiling Specification.v
+    exit /b 1
+)
+
+echo   Invariants.v...
+coqc -R Picinae Picinae -R Proofs/Helpers atoiProof.Helpers Proofs/Helpers/Invariants.v
+if errorlevel 1 (
+    echo Error compiling Invariants.v
     exit /b 1
 )
 
 REM Compile main proof - include all paths with their namespaces
 echo Compiling Proofs/Main_Proof.v...
-coqc -R Picinae Picinae -R LiftedSource atoiProof -R Proofs atoiProof Proofs/Main_Proof.v
+coqc -R Picinae Picinae -R LiftedSource atoiProof -R Proofs/Helpers atoiProof.Helpers -R Proofs atoiProof Proofs/Main_Proof.v
 if errorlevel 1 (
     echo Error compiling Main_Proof.v
     exit /b 1
