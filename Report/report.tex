@@ -7,6 +7,104 @@
 
 \usepackage{enumerate}
 
+% Define acmart-style author commands for IEEEtran compatibility
+\makeatletter
+% Storage for multiple authors
+\newcounter{authorcount}
+\setcounter{authorcount}{0}
+
+% Redefine \author to collect author information
+\let\old@author\author
+\renewcommand{\author}[1]{%
+  \stepcounter{authorcount}%
+  \expandafter\gdef\csname @authorname\Roman{authorcount}\endcsname{#1}%
+  \expandafter\gdef\csname @authoremail\Roman{authorcount}\endcsname{}%
+  \expandafter\gdef\csname @authorinst\Roman{authorcount}\endcsname{}%
+  \expandafter\gdef\csname @authorstreet\Roman{authorcount}\endcsname{}%
+  \expandafter\gdef\csname @authorcity\Roman{authorcount}\endcsname{}%
+  \expandafter\gdef\csname @authorstate\Roman{authorcount}\endcsname{}%
+  \expandafter\gdef\csname @authorcountry\Roman{authorcount}\endcsname{}%
+  \expandafter\gdef\csname @authorpostcode\Roman{authorcount}\endcsname{}%
+}
+
+\newcommand{\email}[1]{%
+  \expandafter\gdef\csname @authoremail\Roman{authorcount}\endcsname{#1}%
+}
+
+\newcommand{\affiliation}[1]{#1}
+
+\newcommand{\institution}[1]{%
+  \expandafter\gdef\csname @authorinst\Roman{authorcount}\endcsname{#1}%
+}
+
+\newcommand{\streetaddress}[1]{%
+  \expandafter\gdef\csname @authorstreet\Roman{authorcount}\endcsname{#1}%
+}
+
+\newcommand{\city}[1]{%
+  \expandafter\gdef\csname @authorcity\Roman{authorcount}\endcsname{#1}%
+}
+
+\newcommand{\state}[1]{%
+  \expandafter\gdef\csname @authorstate\Roman{authorcount}\endcsname{#1}%
+}
+
+\newcommand{\country}[1]{%
+  \expandafter\gdef\csname @authorcountry\Roman{authorcount}\endcsname{#1}%
+}
+
+\newcommand{\postcode}[1]{%
+  \expandafter\gdef\csname @authorpostcode\Roman{authorcount}\endcsname{#1}%
+}
+
+% Helper to add line if content is non-empty
+\newcommand{\@addlineifnonempty}[1]{%
+  \ifx\relax#1\relax\else
+    \if\relax\detokenize{#1}\relax\else
+      #1\\
+    \fi
+  \fi
+}
+
+% Redefine \maketitle to format authors in acmart style
+\let\old@maketitle\maketitle
+\renewcommand{\maketitle}{%
+  % Build author block
+  \def\@authorblock{}%
+  \newcounter{@authloop}%
+  \setcounter{@authloop}{1}%
+  \loop\ifnum\value{@authloop}>\value{authorcount}\else
+    % Build individual author entry
+    \begingroup
+    \edef\@authname{\csname @authorname\Roman{@authloop}\endcsname}%
+    \edef\@authemail{\csname @authoremail\Roman{@authloop}\endcsname}%
+    \edef\@authinst{\csname @authorinst\Roman{@authloop}\endcsname}%
+    \edef\@authstreet{\csname @authorstreet\Roman{@authloop}\endcsname}%
+    \edef\@authcity{\csname @authorcity\Roman{@authloop}\endcsname}%
+    \edef\@authstate{\csname @authorstate\Roman{@authloop}\endcsname}%
+    \edef\@authcountry{\csname @authorcountry\Roman{@authloop}\endcsname}%
+    \edef\@authpost{\csname @authorpostcode\Roman{@authloop}\endcsname}%
+    \xdef\@tempauthorentry{%
+      \noexpand\begin{tabular}{@{}c@{}}%
+        \noexpand\textbf{\@authname}%
+        \ifx\@authemail\empty\else\noexpand\\\@authemail\fi%
+        \ifx\@authinst\empty\else\noexpand\\\@authinst\fi%
+        \ifx\@authcity\empty\else\noexpand\\\@authcity\fi\ifx\@authstate\empty\else, \@authstate \fi\ifx\@authcountry\empty\else, \@authcountry\fi%
+      \noexpand\end{tabular}%
+    }%
+    \endgroup
+    \expandafter\g@addto@macro\expandafter\@authorblock\expandafter{\@tempauthorentry}%
+    \stepcounter{@authloop}%
+    \ifnum\value{@authloop}>\value{authorcount}\else
+      \g@addto@macro\@authorblock{\hspace{2em}}%
+    \fi
+  \repeat
+  % Pass formatted authors to IEEEtran
+  \expandafter\old@author\expandafter{\@authorblock}%
+  \old@maketitle
+}
+\makeatother
+
 
 % *** GRAPHICS RELATED PACKAGES ***
 %
@@ -241,17 +339,71 @@
 % Do not put math or special symbols in the title.
 \title{\texttt{atoi} Proof of Correctness Report -- Team 2}
 %
-%
-% author names and IEEE memberships
-% note positions of commas and nonbreaking spaces ( ~ ) LaTeX will not break
-% a structure at a ~ so this keeps an author's name from being broken across
-% two lines.
-% use \thanks{} to gain access to the first footnote area
-% a separate \thanks must be used for each paragraph as LaTeX2e's \thanks
-% was not built to handle multiple paragraphs
-%
+%%
+%% The "author" command and its associated commands are used to define
+%% the authors and their affiliations.
+%% Of note is the shared affiliation of the first two authors, and the
+%% "authornote" and "authornotemark" commands
+%% used to denote shared contribution to the research.
+\author{Matthew Sheldon}
+\email{matthew.sheldon@utdallas.edu}
 
-\author{\Large{Matthew Sheldon, Isabella Pereira, Jarrod Rogers, Naja-Lee Habboush, and Brandon Wang}\\ \large The University of Texas at Dallas, \\   {\{mts200002,iap200002,jtr190004,nih200000,blw190004\}@utdallas.edu}}% <-this % stops a space
+\affiliation{%
+  \institution{The University of Texas at Dallas}
+  \streetaddress{800 W. Campbell Road}
+  \city{Richardson}
+  \state{Texas}
+  \country{USA}
+  \postcode{75080-3021}
+}
+
+\author{Isabella Pereira}
+\email{isabella.pereira@utdallas.edu}
+
+\affiliation{%
+  \institution{The University of Texas at Dallas}
+  \streetaddress{800 W. Campbell Road}
+  \city{Richardson}
+  \state{Texas}
+  \country{USA}
+  \postcode{75080-3021}
+}
+
+\author{Jarrod Rogers}
+\email{jarrod.rogers@utdallas.edu}
+
+\affiliation{%
+  \institution{The University of Texas at Dallas}
+  \streetaddress{800 W. Campbell Road}
+  \city{Richardson}
+  \state{Texas}
+  \country{USA}
+  \postcode{75080-3021}
+}
+
+\author{Naja-Lee Habboush}
+\email{naja-lee.babboush@utdallas.edu}
+
+\affiliation{%
+  \institution{The University of Texas at Dallas}
+  \streetaddress{800 W. Campbell Road}
+  \city{Richardson}
+  \state{Texas}
+  \country{USA}
+  \postcode{75080-3021}
+}
+
+\author{Brandon Wang}
+\email{brandon.wang@utdallas.edu}
+
+\affiliation{%
+  \institution{The University of Texas at Dallas}
+  \streetaddress{800 W. Campbell Road}
+  \city{Richardson}
+  \state{Texas}
+  \country{USA}
+  \postcode{75080-3021}
+}
 
 % The paper headers
 \markboth{CS 6335.001, Language-Based Security, December~2025}%
