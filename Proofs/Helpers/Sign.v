@@ -12,8 +12,8 @@ Import ARM8Notations.
 Open Scope Z.
 
 (* 
-  0x2D (* minus sign *)
-  0x2B (* plus sign *) 
+  0x2D = 45 (* minus sign *)
+  0x2B = 43 (* plus sign *) 
 *)
 
 Definition handle_sign (mem:memory) (p:addr) :=
