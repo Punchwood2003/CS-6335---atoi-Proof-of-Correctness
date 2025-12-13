@@ -65,6 +65,21 @@ Proof.
   intros. apply getmem_mod with (w:=64) (e:=LittleE) (n2:=4) (n1:=1) (m:=m) (a:=p).
 Qed.
 
+Lemma all_digits_pred:
+  ∀ mem p j k, k > 0 -> all_digits mem p j k -> all_digits mem p j (k-1).
+Proof.
+Admitted.
+
+Check is_digit.
+
+Lemma all_digits_succ:
+  ∀ mem p j k, all_digits mem p j (k+1) -> all_digits mem p j k /\ is_digit (mem Ⓑ[p ⊕ j ⊕ k]).
+Proof.
+  intros. split.
+    apply all_digits_pred in H. psimpl in H. assumption.
+    induction k.
+      simpl. apply N.lt_gt with (n:=0) (m:=1). apply N.lt_0_1.
+
 Theorem atoi_partial_correctness:
   forall s t s' x' mem p 
     (PRE: atoi_pre p s t x' s')
@@ -102,131 +117,159 @@ Proof.
     (* BC: Character is a plus sign, so we know a sign exists. *)
     step. step. intros. specialize PRE with (i:=i). 
     destruct PRE as (WS & REG); destruct WS as (NUMWS & NONWS); destruct REG as (X0 & X1).
-    unfold inv_sign_exists. exists (i+1). split. right. split.
-      (* The current character is in fact a plus sign *)
+    unfold inv_sign_exists. repeat split.
+      (* Our knowledge of the whitespace is maintained. *)
+      unfold all_whitespace_until; assumption. assumption.
+      (* We just hit the sign indicator, so it exists (and is a plus sign). *)
+      unfold sign_indicator_exists. right.
       apply Neqb_ok in BC. rewrite X0 in BC. rewrite mod_too_big_to_matter in BC. assumption.
-      (* R_X3 is equal to 0 because this is a plus sign (positive number). *)
-      psimpl; reflexivity.
-      (* We know at what index the digits should start. *)
-      unfold digit_start, first_nonwhitespace, all_whitespace_until. repeat split; try assumption.
-      left. split.
-        unfold sign_indicator_exists. right. split.
-          apply Neqb_ok in BC. rewrite X0 in BC. rewrite mod_too_big_to_matter in BC. assumption.
-          psimpl. reflexivity.
-        reflexivity.
+      (* The contents of R_X1 are unchanged from the previous invariant. *)
+      psimpl; assumption.
+      (* R_X3 now contains either 0 or 1; in this case, 0 because it's a plus sign *)
+      psimpl; left; reflexivity.
     (* BC: Character is NOT a plus sign *)
     step. step.
       (* BC0: Character is a minus sign *)
       step. intros. specialize PRE with (i:=i). 
       destruct PRE as (WS & REG); destruct WS as (NUMWS & NONWS); destruct REG as (X0 & X1).
-      unfold inv_sign_exists. unfold sign_indicator_exists. exists (i+1). split. left. split.
-        (* The current character is in fact a minus sign *)
+      unfold inv_sign_exists. repeat split.
+        (* Our knowledge of the whitespace is maintained. *)
+        unfold all_whitespace_until; assumption. assumption.
+        (* We just hit the sign indicator, so it exists (and is a minus sign). *)
+        unfold sign_indicator_exists. left.
         apply Neqb_ok in BC0. rewrite X0 in BC0. rewrite mod_too_big_to_matter in BC0. assumption.
-        (* The current character is in fact a minus sign *)
-        psimpl; reflexivity.
-        (* We know at what index the digits should start. *)
-        unfold digit_start. split. unfold first_nonwhitespace, all_whitespace_until. left. split.
-          unfold sign_indicator_exists. left. split.
-            apply Neqb_ok in BC0. rewrite X0 in BC0. rewrite mod_too_big_to_matter in BC0. assumption.
-            psimpl; reflexivity.
-          reflexivity.
+        (* The contents of R_X1 are unchanged from the previous invariant. *)
         psimpl; assumption.
-      (* BC0: Character is NOT a minus sign *)
+        (* R_X3 now contains either 0 or 1; in this case, 1 because it's a minus sign *)
+        psimpl; right; reflexivity.
+      (* BC0: Character is NOT a minus sign (1048624) *)
       step. step. intros. specialize PRE with (i:=i). 
-      destruct PRE as (WS & REG); destruct WS as (NUMWS & NONWS); destruct REG as (X0 & X1). exists i.
-      unfold inv_post_sign. (* At this point, there is no sign indicator. *) split. right. split.
-        (* There is no sign indicator. *)
-        unfold sign_indicator_exists.
-        apply N.eqb_neq in BC. rewrite X0 in BC. rewrite mod_too_big_to_matter in BC.
-        apply N.eqb_neq in BC0. rewrite X0 in BC0. rewrite mod_too_big_to_matter in BC0.
-        psimpl. psimpl in BC. psimpl in BC0. tauto. (* trust me bro *)
-        (* R_X3 = 0 because there is no sign indicator. *)
-        psimpl; reflexivity.
-        (* We know at what index the digits should start. *)
+      destruct PRE as (WS & REG); destruct WS as (NUMWS & NONWS); destruct REG as (X0 & X1). 
+      (* If we reach here, this is no sign indicator. The digits should start at the first non-whitespace index. *)
+      exists i. unfold inv_post_sign. split.
+        (* We know the index of digit start; it's where we are now ! *)
         unfold digit_start. split.
-          unfold sign_indicator_exists. right. split.
+          (* Our knowledge of the whitespace is maintained. *)
+          unfold first_nonwhitespace, all_whitespace_until. split; assumption.
+          (* There is no sign indicator. *)
+          right. unfold sign_indicator_exists. repeat split.
+            (* The current character is neither a plus nor minus sign. *)
             apply N.eqb_neq in BC. rewrite X0 in BC. rewrite mod_too_big_to_matter in BC.
             apply N.eqb_neq in BC0. rewrite X0 in BC0. rewrite mod_too_big_to_matter in BC0.
-            psimpl. psimpl in BC. psimpl in BC0. tauto.
-          reflexivity.
+            psimpl. psimpl in BC. psimpl in BC0. tauto. (* trust me bro *)
+        (* We have seen 0 valid digits so far; base case for setting up the main loop *)
+        split. unfold all_digits. intros. apply N.nlt_0_r in H. exfalso; assumption.
+        (* R_X1 has not been incremented because there is no sign indicator, so it's already
+           at the index at which digits should start. *)
         psimpl; assumption.
 
   (* 1048620 -> 1048624: There is a sign indicator. *)
-  step. intros. 
-  (* Precondition unfolding *)
-  specialize PRE with (i:=i). destruct PRE. rename x into j; exists j. 
-  unfold inv_sign_exists in H. destruct H as (SIGN & DIGIT). destruct DIGIT as (DIGIT & X1).
-  (* Goal unfolding *)
-  unfold inv_post_sign, inv_sign_exists.
-  (* The Proof *)
-  split. 
-    (* There is a sign indicator and we know R_X3 is 0 or 1. *)
-    left. split.
-      (* There is a sign indicator. *)
-      unfold sign_indicator_exists in *. destruct SIGN as [SIGN|].
-        (* The sign was a minus sign. *)
-        destruct SIGN as (SIGN & X3). left; split; assumption.
-        (* The sign was a plus sign. *)
-        destruct H as (SIGN & X3). right; split; assumption.
-      (* R_X3 is either 0 or 1. *)
-      psimpl. destruct SIGN. 
-        destruct H. right; assumption.
-        destruct H. left; assumption.
-    (* We know the index of digit start. *)
-    destruct DIGIT.
-      (* A sign indicator exists; the index of digit start is just after this sign indicator. *)
-      split.
-        unfold digit_start. left. split.
-          unfold sign_indicator_exists in *. psimpl. psimpl in SIGN. assumption.
-          destruct H. assumption.
-        psimpl. destruct H. subst. rewrite X1. psimpl; reflexivity.
-      (* A sign indicator does NOT exist. *)
-      destruct H. contradiction.
+  step. intros. specialize PRE with (i:=i). 
+  destruct PRE as (WS & H); destruct H as (SIGN & H); destruct H as (X1 & X3).
+  exists (i+1). unfold inv_post_sign. split.
+    (* We know the index of digit start. 
+       Since there is a sign indicator, it should be first nonwhitespace + 1. *)
+    unfold digit_start. destruct WS as (WS & NONWS). repeat split.
+      (* Our knowledge of the whitespace is maintained. *)
+      assumption. assumption.
+      (* We know a sign indicator exists. *)
+      left. split.
+        (* A valid sign indicator exists (it's a plus or minus sign). *)
+        unfold sign_indicator_exists in *. assumption.
+        (* Because a sign indicator exists, R_X3 is either 0 or 1, and the index of digit start is i+1. *)
+        psimpl. split; try assumption; try reflexivity.
+        (* We have seen 0 valid digits so far; base case for setting up the main loop *)
+        split. unfold all_digits. intros. apply N.nlt_0_r in H. exfalso; assumption.
+        (* Because a sign indicator exists, R_X1 is incremented at 1048620. *)
+        psimpl. rewrite X1. psimpl; reflexivity.
 
-  (* 1048624 -> 1048664 *)
-  step. step. step. intros. 
+  (* 1048624 -> 1048664: From the main loop setup (inv_post_sign) to inside the loop's conditional. *)
+  step. step. step. intros.
+  (* Precondition work *)
   specialize PRE with (i:=i); unfold inv_post_sign, inv_sign_exists, sign_indicator_exists in PRE.
-  psimpl in PRE. destruct PRE; destruct H as (PRE & DSTART). rename x into j. destruct DSTART as (DSTART & X1).
-  destruct PRE.
-  (* Sign indicator exists. *)
-  exists j, 0, 0. unfold inv_digit_loop. split.
-    (* We know inv_post_sign still holds despite R_X0 and R_X4 being changed. *)
-    unfold inv_post_sign. split. 
-      unfold sign_indicator_exists. psimpl. left. assumption.
-      split; assumption.
-    (* We have seen k=0 valid digits so far. *)
-    split.
-      unfold all_digits. intros. apply N.nlt_0_r in H0. exfalso; assumption.
-    split.
-      apply N.le_refl.
-      psimpl. split.
-        assumption.
-        reflexivity.
-  (* Sign indicator does not exist. *)
-  exists j, 0, 0. unfold inv_digit_loop. split.
-    (* We know inv_post_sign still holds despite R_X0 and R_X4 being changed. *)
-    unfold inv_post_sign. split. 
-      unfold inv_sign_exists, sign_indicator_exists. psimpl. right. assumption. 
-      split; assumption.
-    (* We have seen k=0 valid digits so far. *)
-    split.
-      unfold all_digits. intros. apply N.nlt_0_r in H0. exfalso; assumption.
-    split.
-      apply N.le_refl.
-      psimpl. split.
-        assumption. 
-        reflexivity.
+  destruct PRE; destruct H as (DIGIT & X1); pose DIGIT as D2; destruct D2 as (WS & SIGN); 
+  destruct WS as (WS & NONWS); rename x into j. destruct SIGN as [SIGN|SIGN].
+    (* Sign indicator exists. *)
+    destruct SIGN as (SIGN & X3); destruct X3 as (X3 & J). exists (i+1), 0. 
+    unfold inv_digit_loop. split.
+      (* We know the index of digit start, and that R_X1 contains the index of digit start. *)
+      unfold inv_post_sign. split.
+        (* We know the index of digit start. *)
+        unfold digit_start. psimpl. repeat split.
+          (* Our knowledge of the whitespace is maintained. *)
+          assumption. assumption.
+          (* Examine the case in which a sign indicator exists. *)
+          left. split.
+            (* A valid sign indicator exists. *)
+            unfold sign_indicator_exists in *. assumption.
+            (* R_X3 contains a 0 or a 1. *)
+            psimpl; split; try assumption.
+            (* The index of digit start is the first non-whitespace index + 1. *)
+            reflexivity.
+          (* We have seen 0 valid digits so far. *)
+          split. subst. destruct X1; assumption.
+          (* Because a sign indicator exists, j = i+1, and this is what R_X1 contains. *)
+          subst. psimpl in X1; psimpl. destruct X1. split; try assumption; try reflexivity.
+    (* Sign indicator does not exist. *)
+    destruct SIGN as (SIGN & X3); destruct X3 as (X3 & J). exists i, 0.
+    unfold inv_digit_loop. split.
+      (* We know the index of digit start, and that R_X1 contains the index of digit start. *)
+      unfold inv_post_sign. split.
+        (* We know the index of digit start. *)
+        unfold digit_start. psimpl. repeat split.
+          (* Our knowledge of the whitespace is maintained. *)
+          assumption. assumption.
+          (* Examine the case in which no sign indicator exists. *)
+          right. split.
+            (* No sign indicator exists. *)
+            unfold sign_indicator_exists in *. assumption.
+            (* R_X3 contains a 0. *)
+            split; try assumption.
+            (* The index of digit start is the first non-whitespace index. *)
+            reflexivity.
+          (* We have seen 0 valid digits so far. *)
+          split. subst. destruct X1; assumption.
+          (* Because no sign indicator exists, j = i, and this is what R_X1 contains. *)
+          subst. psimpl in X1; psimpl. destruct X1. split; try assumption; try reflexivity.
 
   (* 1048636 -> 1048580 - From inside whitespace loop back to the start of it*)
-  step. step. 
-  specialize PRE with (i:=0). destruct PRE; psimpl in H. destruct H0.
+  step. step.
+  specialize PRE with (i:=0). destruct PRE as (WSPRE & WS). destruct WS as (WS & X0 & X1).
   unfold inv_whitespace_loop, all_whitespace_until. exists 1. split.
-    left. psimpl; assumption.
-    psimpl. rewrite H1. psimpl; reflexivity.
+    left. psimpl.
+    psimpl. psimpl in WS. assumption.
+    psimpl. rewrite X1. psimpl; reflexivity.
 
   (* 1048652 -> 1048664 *)
-  step. step. step. admit.
+  admit.
 
   (* 1048664 -> 1048652 and 1048664 -> EXIT *)
-  admit.
+  step. step. step. step.
+    (* 1048664 -> EXIT *)
+    admit. Print N.pos.
+    (* 1048664 -> 1048652 *)
+    (* Precondition unfolding *)
+    intro i. specialize PRE with (i:=i). unfold inv_digit_loop, inv_post_sign in PRE.
+    destruct PRE; rename x into j; destruct H; rename x into k;
+    destruct H as (DSTART & H); destruct DSTART as (WS & SIGN); 
+    destruct H as (ALLD & H); destruct H as (ACC & X4).
+    rename p0 into x.
+    (* Proof *)
+    intros. unfold inv_digit_multiply; psimpl. exists j; exists k; exists k. split.
+      (* digit_start i j s *)
+      unfold digit_start in *. split.
+        (* Whitespace knowledge is preserved *)
+        assumption.
+        destruct SIGN as [SIGN|SIGN].
+          (* Case 1: Sign indicator exists. *)
+          destruct SIGN as (SIGN & X3 & J). left; psimpl. unfold sign_indicator_exists in *.
+          repeat split; try assumption. psimpl in J; assumption.
+          (* Case 2: Sign indicator does not exist. *)
+          destruct SIGN as (SIGN & X3 & J). right; psimpl. unfold sign_indicator_exists in *.
+          repeat split; assumption.
+      (* All bytes from j to j+1 are digits *)
+      split. unfold all_digits.
+      split. assumption.
+      split. unfold digit_value. psimpl. 
+      admit. admit.
 Admitted.

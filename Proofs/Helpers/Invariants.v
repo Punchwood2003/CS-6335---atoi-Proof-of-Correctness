@@ -35,15 +35,20 @@ Section Invariants.
   Definition first_nonwhitespace (i : N) : Prop :=
     all_whitespace_until i /\ ¬(is_whitespace (mem Ⓑ[p ⊕ i])).
 
+  (* A sign indicator exists at the first non-whitespace index i. *)
   (* w3 encodes the sign: 1 for negative, 0 for non-negative *)
   Definition sign_indicator_exists (i : N) (s : store) : Prop :=
-    (mem Ⓑ[p ⊕ i] = 0x2D /\ s R_X3 = 1) \/  (* minus sign *)
-    (mem Ⓑ[p ⊕ i] = 0x2B /\ s R_X3 = 0).    (* plus sign *)
+    (mem Ⓑ[p ⊕ i] = 0x2D) \/  (* minus sign *)
+    (mem Ⓑ[p ⊕ i] = 0x2B).    (* plus sign *)
 
+  (* The index at which the digits should start is j, where j is either: 
+     1. The index after the sign indicator, or
+     2. The first non-whitespace character when no sign exists. *)
   (* Index where digits should start (after optional sign) *)
   Definition digit_start (i : N) (j : N) (s : store) : Prop :=
-    (sign_indicator_exists i s /\ j = i + 1) \/
-    (¬sign_indicator_exists i s /\ j = i).
+    first_nonwhitespace i /\
+    ((sign_indicator_exists i s /\ (s R_X3 = 0 \/ s R_X3 = 1) /\ j = i + 1) \/
+    (¬sign_indicator_exists i s /\ s R_X3 = 0 /\ j = i)).
 
   (* ========== Loop Invariants ========== *)
   Variable s0: store. (* Initial state *)
@@ -68,6 +73,7 @@ Section Invariants.
   (* 1048636 - Invariant at the first statement inside the whitespace-skipping loop *)
   (* If we are here, the current character should indeed be whitespace. *)
   Definition inv_inside_whitespace_loop (i : N) (s : store) : Prop :=
+    all_whitespace_until i /\
     is_whitespace (mem Ⓑ[p ⊕ i]) /\
     s R_X0 = mem Ⓑ[p ⊕ i] /\
     s R_X1 = p ⊕ i.
@@ -82,32 +88,28 @@ Section Invariants.
     s R_X1 = p ⊕ i.
 
   (* 1048620 - Invariant after parsing an existing sign character.
-     If we are here, there for sure is a sign indicator.\
-     Therefore, we know the index at which digits should start appearing. *)
-  Definition inv_sign_exists (i j : N) (s : store) : Prop :=
+     If we are here, there for sure is a sign indicator. *)
+  Definition inv_sign_exists (i : N) (s : store) : Prop :=
+    first_nonwhitespace i /\
     sign_indicator_exists i s /\
-    digit_start i j s /\
-    s R_X1 = p ⊕ i.
+    s R_X1 = p ⊕ i /\
+    (s R_X3 = 0 \/ s R_X3 = 1).
 
   (* 1048624 - Invariant placed right after processing the sign indicator (1048624). We know that EITHER:
      1. A sign exists and R_X3 is either 0 or 1, or
      2. A sign does not exist and R_X3 is 0. 
      We also know where the digits should start based on the whitespace and sign existence. *)
   Definition inv_post_sign (i j : N) (s : store) : Prop :=
-    ((sign_indicator_exists i s /\ (s R_X3 = 0 \/ s R_X3 = 1)) \/ 
-    (¬(sign_indicator_exists i s) /\ s R_X3 = 0)) /\
     digit_start i j s /\
+    all_digits j 0 /\
     s R_X1 = p ⊕ j.
 
   (* 1048652 - Invariant at digit-computation phase
      We've multiplied the accumulator by 10, now subtracting the digit value *)
   Definition inv_digit_multiply (i j k acc : N) (s : store) : Prop :=
-    first_nonwhitespace i /\
-    sign_indicator_exists i s /\
     digit_start i j s /\
     all_digits j (acc + 1) /\  (* we know this digit is valid *)
-    acc < k /\
-    s R_X1 = p ⊕ j ⊕ acc /\
+    s R_X1 = p ⊕ j ⊕ k /\
     s R_X2 = digit_value (mem Ⓑ[s R_X1]) /\
     s R_X4 = 10.
 
@@ -118,13 +120,12 @@ Section Invariants.
      - the current position and what we're examining
      - the sign indicator in X3
      X0 contains a partial result (exact formula depends on implementation details) *)
-  Definition inv_digit_loop (i j k acc : N) (s : store) : Prop :=
-    inv_post_sign i j s /\
+  Definition inv_digit_loop (i j k : N) (s : store) : Prop :=
+    digit_start i j s /\
     all_digits j k /\  (* we've seen k valid digits so far *)
-    acc <= k /\  (* acc is how many we've actually processed *)
-    s R_X1 = p ⊕ j ⊕ acc /\
+    s R_X1 = p ⊕ j ⊕ k /\
     s R_X4 = 10.   (* multiplier *)
-  
+
   (* Unified invariant set at each checkpoint *)
   Definition atoi_invs (t : trace) : option Prop :=
     match t with
@@ -134,11 +135,11 @@ Section Invariants.
       | 1048580 => Some (∃ i, inv_whitespace_loop i s)
       | 1048636 => Some (∀ i, inv_inside_whitespace_loop i s)
       | 1048600 => Some (∀ i, inv_after_whitespace i s)
-      | 1048620 => Some (∀ i, ∃ j, inv_sign_exists i j s)
+      | 1048620 => Some (∀ i, inv_sign_exists i s)
       | 1048624 => Some (∀ i, ∃ j, inv_post_sign i j s)
-      | 1048652 => Some (∀ i k acc, ∃ j, inv_digit_multiply i j k acc s)
-      | 1048664 => Some (∀ i, ∃ j k acc, inv_digit_loop i j k acc s)
-      (* | 1048688 => Some (postcondition s) *)
+      | 1048652 => Some (∀ i, ∃ j k acc, inv_digit_multiply i j k acc s)
+      | 1048664 => Some (∀ i, ∃ j k, inv_digit_loop i j k s)
+(*       | 1048688 => Some (postcondition s) *)
       | _ => None  (* other addresses are unconstrained *)
       end
     | _ => None
