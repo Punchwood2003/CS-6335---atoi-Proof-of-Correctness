@@ -151,4 +151,22 @@ Section Invariants.
     | _ => None
     end.
 
+  Lemma inductive_all_digits : forall (j k : N),
+    all_digits j k -> is_digit (mem Ⓑ[p ⊕ j ⊕ k]) -> all_digits j (k+1).
+  Proof.
+    intros j k Hall_digits Hdigit.
+    unfold all_digits in *.
+    intros i Hi.
+    (* Hi : i < k + 1, need to show is_digit (mem Ⓑ[p ⊕ j ⊕ i]) *)
+    (* We prove by cases on whether i < k, i = k, or i > k *)
+    destruct (N.lt_total i k) as [Hlt | [Heq | Hgt]].
+    + (* Case: i < k *)
+      apply Hall_digits. exact Hlt.
+    + (* Case: i = k *)
+      subst. exact Hdigit.
+    + (* Case: i > k, contradicts i < k+1 *)
+      (* k < i and i < k+1 is impossible *)
+      exfalso. lia.
+  Qed.
+
 End Invariants.
