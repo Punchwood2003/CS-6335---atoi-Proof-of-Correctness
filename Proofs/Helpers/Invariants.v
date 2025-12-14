@@ -108,7 +108,8 @@ Section Invariants.
      We've multiplied the accumulator by 10, now subtracting the digit value *)
   Definition inv_digit_multiply (i j k acc : N) (s : store) : Prop :=
     digit_start i j s /\
-    all_digits j (acc + 1) /\  (* we know this digit is valid *)
+    all_digits j k /\  
+    is_digit (mem Ⓑ[p ⊕ j ⊕ k]) /\ (* we know this digit is valid *)
     s R_X1 = p ⊕ j ⊕ k /\
     s R_X2 = digit_value (mem Ⓑ[s R_X1]) /\
     s R_X4 = 10.
@@ -126,6 +127,13 @@ Section Invariants.
     s R_X1 = p ⊕ j ⊕ k /\
     s R_X4 = 10.   (* multiplier *)
 
+  (* 1048680 - Invariant after post digit loop 
+     Main takeaway: The memory from [p+j to p+j+k-1] is the number to be converted. *)
+  Definition inv_post_digit_loop (i j k : N) (s : store) : Prop :=
+    digit_start i j s /\
+    all_digits j k /\
+    ¬is_digit (mem Ⓑ[p ⊕ j ⊕ k]).
+
   (* Unified invariant set at each checkpoint *)
   Definition atoi_invs (t : trace) : option Prop :=
     match t with
@@ -139,6 +147,7 @@ Section Invariants.
       | 1048624 => Some (∀ i, ∃ j, inv_post_sign i j s)
       | 1048652 => Some (∀ i, ∃ j k acc, inv_digit_multiply i j k acc s)
       | 1048664 => Some (∀ i, ∃ j k, inv_digit_loop i j k s)
+      | 1048680 => Some (∀ i, ∃ j k, inv_post_digit_loop i j k s)
 (*       | 1048688 => Some (postcondition s) *)
       | _ => None  (* other addresses are unconstrained *)
       end

@@ -65,20 +65,44 @@ Proof.
   intros. apply getmem_mod with (w:=64) (e:=LittleE) (n2:=4) (n1:=1) (m:=m) (a:=p).
 Qed.
 
-Lemma all_digits_pred:
-  ∀ mem p j k, k > 0 -> all_digits mem p j k -> all_digits mem p j (k-1).
-Proof.
-Admitted.
-
-Check is_digit.
-
-Lemma all_digits_succ:
-  ∀ mem p j k, all_digits mem p j (k+1) -> all_digits mem p j k /\ is_digit (mem Ⓑ[p ⊕ j ⊕ k]).
+Lemma zero_lor_zero:
+  forall n m, n .| m = 0 -> n = 0 /\ m = 0.
 Proof.
   intros. split.
-    apply all_digits_pred in H. psimpl in H. assumption.
-    induction k.
-      simpl. apply N.lt_gt with (n:=0) (m:=1). apply N.lt_0_1.
+    apply N.lor_eq_0_l with (b:=m); assumption.
+    rewrite N.lor_comm in H. apply N.lor_eq_0_l with (b:=n); assumption.
+Qed.
+
+Lemma trivial_if:
+  forall (n m : N) (b : bool), (n ≠ m) -> (if b then n else m) = n -> b = true.
+Proof.
+  intros.
+  destruct b.
+    reflexivity.
+    symmetry in H0; contradiction.
+Qed.
+
+Lemma trivial_if_false:
+  forall (b : bool), (if b then 1 else 0) = 0 -> b = false.
+Proof.
+  intros.
+  destruct b.
+    discriminate.
+    reflexivity.
+Qed.
+
+Lemma lor_0_or_1:
+  forall (b1 b2 : bool) (n : N), 
+    (if b1 then 0 else 1) .| (if b2 then 1 else 0) = n -> n = 0 \/ n = 1.
+Proof.
+  intros. destruct b1.
+    destruct b2.
+      right; simpl in H; symmetry; assumption.
+      left; simpl in H; symmetry; assumption.
+    destruct b2.
+      right; simpl in H; symmetry; assumption.
+      right; simpl in H; symmetry; assumption.
+Qed.
 
 Theorem atoi_partial_correctness:
   forall s t s' x' mem p 
@@ -241,12 +265,47 @@ Proof.
     psimpl. rewrite X1. psimpl; reflexivity.
 
   (* 1048652 -> 1048664 *)
-  admit.
+  step. step. step. admit.
 
-  (* 1048664 -> 1048652 and 1048664 -> EXIT *)
+  (* 1048664 -> 1048652 and 1048664 -> 1048680 *)
   step. step. step. step.
-    (* 1048664 -> EXIT *)
-    admit. Print N.pos.
+    (* 1048664 -> 1048680 *)
+    intro i. specialize PRE with (i:=i). destruct PRE; destruct H. rename x into j; rename x0 into k.
+    apply zero_lor_zero in BC. destruct BC as (BC1 & BC2). 
+    apply trivial_if in BC1. apply trivial_if_false in BC2.
+    unfold inv_digit_loop in H. destruct H as (DSTART & ALLD & X1 & X4).
+    exists j, k. unfold inv_post_digit_loop. split.
+      (* The digit start index remains the same. *)
+      unfold digit_start in *. destruct DSTART as (WS & SIGN). split.
+        assumption.
+        destruct SIGN as [SIGN|NOSIGN].
+          (* Case 1: Sign indicator exists *)
+          left. destruct SIGN as (SIGN & X3 & J). psimpl in J. unfold sign_indicator_exists in *. repeat split; psimpl.
+            (* The sign indicator is valid. *)
+            psimpl in SIGN; assumption. 
+            (* X3 is either 0 or 1, and j = i+1 *)
+            assumption. assumption.
+          (* Case 2: Sign indicator does not exist *)
+          right. destruct NOSIGN as (NOSIGN & X3 & J). unfold sign_indicator_exists in *. repeat split; psimpl.
+            (* No valid sign indicator exists *)
+            psimpl in NOSIGN; assumption.
+            (* X3 is 0, and j = i *)
+            assumption. assumption.
+      (* all_digits *)
+      split. assumption.
+      (* The current character is not a digit, and that's why we have terminated the loop. *)
+      unfold is_digit. 
+      rewrite <- X1. unfold "~". intros. destruct H.
+        (* Admitting this goal because I think it's provable but I can't prove it LOL 
+           1. BC1 is basically saying, with unsigned 32-bit integer arithmetic,
+              that the byte at mem[s R_X1] - 32 is > 9, meaning mem[s R_X1] must hold
+              a byte less than 48 or greater than 57 (i.e., not within ASCII range of a digit).
+           2. BC2 is saying mem[s R_X1] does not hold 57. 
+
+           I think you can reach a contradiction in the context space at this point.*)
+        admit.
+      (* Cleaup from using trivial_if *)
+      unfold "~"; intros; discriminate.
     (* 1048664 -> 1048652 *)
     (* Precondition unfolding *)
     intro i. specialize PRE with (i:=i). unfold inv_digit_loop, inv_post_sign in PRE.
@@ -254,22 +313,43 @@ Proof.
     destruct H as (DSTART & H); destruct DSTART as (WS & SIGN); 
     destruct H as (ALLD & H); destruct H as (ACC & X4).
     rename p0 into x.
-    (* Proof *)
-    intros. unfold inv_digit_multiply; psimpl. exists j; exists k; exists k. split.
-      (* digit_start i j s *)
-      unfold digit_start in *. split.
-        (* Whitespace knowledge is preserved *)
+    (* Working with the branch condition *)
+    pose BC as X. apply lor_0_or_1 in X. destruct X as [X|X].
+    (* Case 1: BC evaluates to 0 *)
+    (* We already proved this for 1048664 -> 1048680 above. 
+       If BC evaluates to 0 then we actually do not branch. 
+       This case should never happen here, but idk how to prove it yet. *)
+    admit.
+    (* Case 2: BC evaluates to 1, and BC1 = 0 / BC2 = 1 *)
+    rewrite X in BC. destruct (if 9 <=? msub 32 (s1 V_MEM64 Ⓑ[ s1 R_X1 ]) 48 then 0 else 1) eqn:BC1 in BC.
+    apply trivial_if in BC1. simpl in BC. apply trivial_if in BC. apply N.eqb_eq in BC. rename BC into BC2.
+    exists j, k, j. unfold inv_digit_multiply. split.
+      (* digit_start still holds true *)
+      unfold digit_start; split.
         assumption.
-        destruct SIGN as [SIGN|SIGN].
-          (* Case 1: Sign indicator exists. *)
-          destruct SIGN as (SIGN & X3 & J). left; psimpl. unfold sign_indicator_exists in *.
-          repeat split; try assumption. psimpl in J; assumption.
-          (* Case 2: Sign indicator does not exist. *)
-          destruct SIGN as (SIGN & X3 & J). right; psimpl. unfold sign_indicator_exists in *.
-          repeat split; assumption.
-      (* All bytes from j to j+1 are digits *)
-      split. unfold all_digits.
+        destruct SIGN.
+          left. unfold sign_indicator_exists in *; destruct H as (SIGN & X3 & J); split; try assumption.
+          psimpl. psimpl in J. split; assumption.
+          right. unfold sign_indicator_exists in *; destruct H as (SIGN & X3 & J); split; try assumption.
+          psimpl. psimpl in J. split; assumption.
+      (* all_digits j k still holds *)
       split. assumption.
-      split. unfold digit_value. psimpl. 
-      admit. admit.
+      (* Since we're inside the digit loop, we know this digit is valid. *)
+      split. unfold is_digit. split; rewrite <- ACC.
+        (* Admitting these two because I don't know how to work with V_MEM64.
+           BC2 says [X1] = 57 which fulfills these inequalities trivially. *)
+        admit. 
+        admit.
+      (* We know X1 points to the current character when we're in the loop. *)
+      split. psimpl. psimpl in ACC; assumption.
+      (* We are *)
+      split. rewrite BC2. unfold digit_value. psimpl.
+        (* Admitted because idk how to deal with V_MEM64. but trust me, it's TRUE !! *)
+        admit.
+      (* X4 = 10. *)
+      psimpl; assumption.
+      (* Cleanup from using trivial_if *)
+      unfold "~"; intros; discriminate.
+      unfold "~"; intros; discriminate.
+    (* Case 3: *)
 Admitted.
