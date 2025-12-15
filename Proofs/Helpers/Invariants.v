@@ -47,6 +47,61 @@ Section Invariants.
       exfalso. lia.
   Qed.
 
+  Lemma digits_msub:
+    forall (n : N),
+      48 <= n ->
+      n <= 57 ->
+      n ≠ 57 ->
+      9 <= msub 32 n 48 ->
+      False.
+  Proof.
+    intros n Hge48 Hle57 Hne57 Hmsub.
+    (* From constraints: 48 <= n < 57, so n - 48 < 9 *)
+    assert (Hlt57: n < 57) by lia.
+    assert (Hupper: n - 48 < 9) by lia.
+    
+    (* Unfold msub: msub 32 n 48 = (n + (2^32 - 48 mod 2^32)) mod 2^32 *)
+    unfold msub in Hmsub.
+    
+    (* Simplify: 48 mod 2^32 = 48 *)
+    assert (H48mod: (48 : N) mod 2^32 = 48) by (apply N.mod_small; lia).
+    rewrite H48mod in Hmsub.
+    
+    (* Algebraic simplification: n + (2^32 - 48) = (n - 48) + 2^32 *)
+    assert (eq_arith: n + (2^32 - 48) = (n - 48) + 2^32) by lia.
+    rewrite eq_arith in Hmsub.
+    
+    (* Key modular fact: when a < m, (a + m) mod m = a *)
+    (* Here a = n - 48 < 9 < 2^32 = m *)
+    assert (H_bound: n - 48 < 2^32) by lia.
+    
+    (* The core mathematical fact: (n - 48 + 2^32) mod 2^32 = n - 48 *)
+    (* This simplifies Hmsub to: 9 <= n - 48 *)
+    (* Combined with Hupper: n - 48 < 9, we get a contradiction *)
+    
+    (* Direct computation: since n ∈ [48, 57), the value (n - 48 + 2^32) mod 2^32 *)
+    (* must equal n - 48 in the range [0, 9) *)
+    (* We verify this by exhaustive reasoning on msub semantics *)
+    assert (H_simplify: ((n - 48) + 2^32) mod 2^32 = n - 48).
+    {
+      rewrite N.Div0.add_mod by lia.
+      rewrite N.Div0.mod_same by lia.
+      rewrite N.add_0_r.
+
+      (* eliminate inner modulo *)
+      rewrite (N.mod_small (n - 48) (2 ^ 32)) by exact H_bound.
+
+      (* eliminate outer modulo *)
+      apply N.mod_small.
+      exact H_bound.
+    }
+    
+    rewrite H_simplify in Hmsub.
+    
+    (* Now Hmsub: 9 <= n - 48, but Hupper: n - 48 < 9 *)
+    lia.
+  Qed.
+
   (* ========== Specification Components ========== *)
 
   (* Index of first non-whitespace character *)
