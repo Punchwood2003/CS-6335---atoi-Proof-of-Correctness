@@ -170,32 +170,18 @@ Proof.
       psimpl; assumption.
 
   (* 1048580 -> 1048636 and 1048580 -> 1048600 *)
-  destruct PRE as (i & H0 & H1 & MEM).
+  destruct PRE as (i & H0 & H1 & MEM). step. step. step. step.
     (* 1048580 -> 1048636: Prove that the current character is whitespace. *)
-    step. step. step. step. step. exists i. unfold inv_inside_whitespace_loop.
-    (* Case 1: The current character is a space (32). *)
-      (* We have seen i whitespace bytes so far *)
-      split. assumption.
-      (* The current character is whitespace. *)
-      split. unfold is_whitespace. right; psimpl. apply Neqb_ok in BC; assumption.
-      (* The contents of R_X0 are unchanged. *)
-      repeat split; psimpl. reflexivity.
-    (* Case 2: The current character is NOT a space (32), and is instead 0x9 <= x <= 0xd. *)
-      step. apply zero_lor_zero in BC0. destruct BC0 as (GE9 & LE13).
-        apply trivial_if in GE9; apply trivial_if_false in LE13.
-        2: unfold "~"; intros; discriminate.
-      intros. unfold inv_after_whitespace.
-      (* first_nonwhitespace *)
-      split. unfold first_nonwhitespace.
+    admit.
     (* 1048580 -> 1048600: Prove that the current character is NOT whitespace, 
     and that there exists j whitespace bytes *)
-    admit. admit. admit.
+    admit.
 
   (* 1048600 -> 1048620 and 1048600 -> 1048624 *)
   unfold inv_after_whitespace, first_nonwhitespace, all_whitespace_until in PRE.
   step. step.
     (* BC: Character is a plus sign, so we know a sign exists. *)
-    step. step. intros. specialize PRE with (i:=i). 
+    step. step. intros. destruct PRE as (i & PRE). exists i. 
     destruct PRE as (WS & X0 & X1 & MEM); destruct WS as (WS & NONWS).
     unfold inv_sign_exists. repeat split.
       (* Our knowledge of the whitespace is maintained. *)
@@ -212,7 +198,7 @@ Proof.
     (* BC: Character is NOT a plus sign *)
     step. step.
       (* BC0: Character is a minus sign *)
-      step. intros. specialize PRE with (i:=i). 
+      step. intros. destruct PRE as (i & PRE). exists i. 
       destruct PRE as (WS & X0 & X1 & MEM); destruct WS as (WS & NONWS).
       unfold inv_sign_exists. repeat split.
         (* Our knowledge of the whitespace is maintained. *)
@@ -227,7 +213,7 @@ Proof.
         (* MEM *)
         psimpl; assumption.
       (* BC0: Character is NOT a minus sign (1048624) *)
-      step. step. intros. specialize PRE with (i:=i). 
+      step. step. intros. destruct PRE as (i & PRE). exists i. 
       destruct PRE as (WS & X0 & X1 & MEM); destruct WS as (WS & NONWS).
       (* If we reach here, this is no sign indicator. The digits should start at the first non-whitespace index. *)
       exists i. unfold inv_post_sign. split.
@@ -250,7 +236,7 @@ Proof.
         psimpl; assumption.
 
   (* 1048620 -> 1048624: There is a sign indicator. *)
-  step. intros. specialize PRE with (i:=i).
+  step. intros. destruct PRE as (i & PRE). exists i. 
   destruct PRE as (WS & SIGN & X1 & X3 & MEM).
   exists (i+1). unfold inv_post_sign. split.
     (* We know the index of digit start. 
@@ -274,7 +260,7 @@ Proof.
   (* 1048624 -> 1048664: From the main loop setup (inv_post_sign) to inside the loop's conditional. *)
   step. step. step. intros.
   (* Precondition work *)
-  specialize PRE with (i:=i).
+  destruct PRE as (i & PRE). exists i.
   destruct PRE; rename x into j. destruct H as (DSTART & ALLD & X1 & MEM); destruct DSTART as (WS & SIGN). 
   destruct SIGN as [SIGN|SIGN].
     (* Sign indicator exists. *)
@@ -321,11 +307,20 @@ Proof.
           subst. psimpl in X1; psimpl. repeat split; try assumption.
 
   (* 1048636 -> 1048580 - From inside whitespace loop back to the start of it *)
-  admit.
+  step. step. 
+  destruct PRE; rename x into i. unfold inv_inside_whitespace_loop in H.
+  destruct H as (WSUNTIL & WS & X0 & X1 & MEM). exists (i+1). unfold inv_whitespace_loop.
+  split.
+    (* We've processed one more whitespace byte *)
+    unfold all_whitespace_until. left; psimpl. psimpl in WS; assumption.
+    (* X1 is incremented *)
+    split; psimpl. rewrite X1. psimpl; reflexivity.
+    (* MEM *)
+    assumption.
 
   (* 1048652 -> 1048664 *)
   (* Setup *)
-  step. step. step. intros. specialize PRE with (i:=i). destruct PRE; destruct H; destruct H.
+  step. step. step. intros. destruct PRE as (i & PRE). exists i. destruct PRE; destruct H; destruct H.
   rename x into j; rename x0 into k; rename x1 into acc. exists j, (k+1).
   unfold inv_digit_multiply in H. destruct H as (DSTART & ALLD & ISDIGIT & X1 & X2 & X4 & MEM).
   (* Proof *)
@@ -345,7 +340,7 @@ Proof.
   step. step. step. step.
     (* ixb, look here *)
     (* 1048664 -> 1048680 - We do NOT take the b.ls branch *)
-    intro i. specialize PRE with (i:=i). destruct PRE; destruct H. rename x into j; rename x0 into k.
+    destruct PRE as (i & PRE). exists i. destruct PRE; destruct H. rename x into j; rename x0 into k.
     apply zero_lor_zero in BC. destruct BC as (BC1 & BC2). 
     apply trivial_if in BC1. apply trivial_if_false in BC2.
     unfold inv_digit_loop in H. destruct H as (DSTART & ALLD & X1 & X4 & MEM).
@@ -364,11 +359,9 @@ Proof.
       unfold "~"; intros; discriminate.
     (* 1048664 -> 1048652 - We take the b.ls branch *)
     (* Precondition unfolding *)
-    intro i. specialize PRE with (i:=i). unfold inv_digit_loop, inv_post_sign in PRE.
+    destruct PRE as (i & PRE). exists i. unfold inv_digit_loop, inv_post_sign in PRE.
     destruct PRE; rename x into j; destruct H; rename x into k;
-    destruct H as (DSTART & H); 
-    destruct H as (ALLD & H); destruct H as (ACC & X4 & MEM).
-    rename p0 into x.
+    destruct H as (DSTART & ALLD & ACC & X4 & MEM); rename p0 into x.
     (* Working with the branch condition *)
     pose BC as X. apply lor_0_or_1 in X. destruct X as [X|X].
       rewrite X in BC. apply zero_lor_zero in BC. destruct BC as (BC1 & BC2). rewrite MEM in *.
@@ -445,13 +438,13 @@ Proof.
 
     (* 1048680 -> EXIT *)
     (* Case 1: Number is negative so cbnz branches *)
-    step. intros. specialize PRE with (i:=i). destruct PRE; destruct H. rename x into j; rename x0 into k.
+    step. intros. destruct PRE as (i & PRE). exists i. destruct PRE; destruct H. rename x into j; rename x0 into k.
     unfold inv_post_digit_loop in H. destruct H as (DSTART & ALLD & NOND & MEM). exists j, k.
     unfold inv_postcondition. 
       split; try assumption.
       split; assumption.
     (* Case 2: Number is positive so cbnz does not branch *)
-    step. intros. specialize PRE with (i:=i). destruct PRE; destruct H. rename x into j; rename x0 into k.
+    step. intros. destruct PRE as (i & PRE). exists i. destruct PRE; destruct H. rename x into j; rename x0 into k.
     unfold inv_post_digit_loop in H. destruct H as (DSTART & ALLD & NOND & MEM). exists j, k.
     unfold inv_postcondition. 
       split; try assumption.
