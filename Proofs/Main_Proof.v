@@ -127,6 +127,14 @@ Proof.
     right; symmetry; assumption.
 Qed.
 
+Lemma msub_lt_9:
+  forall n, msub 32 n 48 < 9 -> 48 <= n < 57.
+Admitted.
+
+Lemma msub_mod_irrelevant:
+  forall n, 48 <= n < 57 -> msub 32 n 48 = n - 48.
+Admitted.
+
 Ltac digit_start_persists DSTART := 
   unfold digit_start in *; destruct DSTART as (WS & SIGN); split;
     try assumption;
@@ -170,12 +178,26 @@ Proof.
       psimpl; assumption.
 
   (* 1048580 -> 1048636 and 1048580 -> 1048600 *)
-  destruct PRE as (i & H0 & H1 & MEM). unfold all_whitespace_until in H0. destruct H0.
+  destruct PRE as (i & H0 & H1 & MEM).
     (* 1048580 -> 1048636: Prove that the current character is whitespace. *)
-    admit.
+    step. step. step. step. step. exists i. unfold inv_inside_whitespace_loop.
+    (* Case 1: The current character is a space (32). *)
+      (* We have seen i whitespace bytes so far *)
+      split. assumption.
+      (* The current character is whitespace. *)
+      split. unfold is_whitespace. right; psimpl. apply Neqb_ok in BC; assumption.
+      (* The contents of R_X0 are unchanged. *)
+      repeat split; psimpl. reflexivity.
+    (* Case 2: The current character is NOT a space (32), and is instead 0x9 <= x <= 0xd. *)
+      step. apply zero_lor_zero in BC0. destruct BC0 as (GE9 & LE13).
+        apply trivial_if in GE9; apply trivial_if_false in LE13.
+        2: unfold "~"; intros; discriminate.
+      intros. unfold inv_after_whitespace.
+      (* first_nonwhitespace *)
+      split. unfold first_nonwhitespace.
     (* 1048580 -> 1048600: Prove that the current character is NOT whitespace, 
     and that there exists j whitespace bytes *)
-    admit.
+    admit. admit. admit.
 
   (* 1048600 -> 1048620 and 1048600 -> 1048624 *)
   unfold inv_after_whitespace, first_nonwhitespace, all_whitespace_until in PRE.
@@ -306,15 +328,8 @@ Proof.
           (* Because no sign indicator exists, j = i, and this is what R_X1 contains. *)
           subst. psimpl in X1; psimpl. repeat split; try assumption.
 
-  (* 1048636 -> 1048580 - From inside whitespace loop back to the start of it*)
-  step. step.
-  specialize PRE with (i:=0). destruct PRE as (WSPRE & WS & X0 & X1 & MEM).
-  unfold inv_whitespace_loop, all_whitespace_until. exists 1. split.
-    left. psimpl.
-    psimpl. psimpl in WS. assumption.
-    psimpl. rewrite X1. split. psimpl; reflexivity. 
-    (* MEM *)
-    assumption.
+  (* 1048636 -> 1048580 - From inside whitespace loop back to the start of it *)
+  admit.
 
   (* 1048652 -> 1048664 *)
   (* Setup *)
@@ -336,7 +351,8 @@ Proof.
 
   (* 1048664 -> 1048652 and 1048664 -> 1048680 *)
   step. step. step. step.
-    (* 1048664 -> 1048680 *)
+    (* ixb, look here *)
+    (* 1048664 -> 1048680 - We do NOT take the b.ls branch *)
     intro i. specialize PRE with (i:=i). destruct PRE; destruct H. rename x into j; rename x0 into k.
     apply zero_lor_zero in BC. destruct BC as (BC1 & BC2). 
     apply trivial_if in BC1. apply trivial_if_false in BC2.
@@ -344,24 +360,17 @@ Proof.
     exists j, k. unfold inv_post_digit_loop. split.
       (* The digit start index remains the same. *)
       digit_start_persists DSTART.
-      (* all_digits *)
-      split. assumption.
+      (* We know there are k-j valid digits. *)
+      split; try assumption.
       (* The current character is not a digit, and that's why we have terminated the loop. *)
       split. unfold is_digit. rewrite <- X1. rewrite MEM in *. apply N.eqb_neq in BC2.
-      unfold "~". intros. destruct H as (H1 & H2).
-        (* Admitting this goal because I think it's provable but I can't prove it LOL 
-           1. BC1 is basically saying, with unsigned 32-bit integer arithmetic,
-              that the byte at mem[s R_X1] - 32 is > 9, meaning mem[s R_X1] must hold
-              a byte less than 48 or greater than 57 (i.e., not within ASCII range of a digit).
-           2. BC2 is saying mem[s R_X1] does not hold 57. 
-
-           I think you can reach a contradiction in the context space at this point.*)
-        admit.
+      unfold "~". intros. apply N.leb_le in BC1. destruct H as (GE48 & LE57).
+      apply digits_msub with (n := mem Ⓑ[ s1 R_X1 ]) in BC1; assumption.
       (* MEM *)
       psimpl; assumption.
       (* Cleaup from using trivial_if *)
       unfold "~"; intros; discriminate.
-    (* 1048664 -> 1048652 *)
+    (* 1048664 -> 1048652 - We take the b.ls branch *)
     (* Precondition unfolding *)
     intro i. specialize PRE with (i:=i). unfold inv_digit_loop, inv_post_sign in PRE.
     destruct PRE; rename x into j; destruct H; rename x into k;
@@ -369,10 +378,17 @@ Proof.
     destruct H as (ALLD & H); destruct H as (ACC & X4 & MEM).
     rename p0 into x.
     (* Working with the branch condition *)
-    pose BC as X. apply lor_0_or_1 in X. destruct X as [|X].
+    pose BC as X. apply lor_0_or_1 in X. destruct X as [X|X].
+      rewrite X in BC. apply zero_lor_zero in BC. destruct BC as (BC1 & BC2). rewrite MEM in *.
+      apply trivial_if in BC1. apply trivial_if_false in BC2. rewrite BC1. rewrite BC2.
+        2: unfold "~"; intros; discriminate.
       (* This case is already handled above in the proof for 1048664 -> 1048680.
-         It's impossible for this case to arise and for the code to also branch... i think... *)
-      rewrite H in BC. apply zero_lor_zero in BC. destruct BC as (BC1 & BC2).
+         It's impossible for this case to arise and for the code to also branch. 
+         After the above simplification, CF = 1 and ZF = 0. b.ls branches if CF = 0 OR ZF = 1,
+         meaning it's impossible for this branch to have occurred.
+
+         However, I don't know how to prove that and will just admit this case.
+         *)
       admit.
       (* Complete the other 3 possible cases *) 
       rewrite X in BC. clear X. apply lor_1_three_cases in BC. destruct BC as [BC|[BC|BC]]. 
@@ -419,29 +435,31 @@ Proof.
           (* all_digits *)
           split. assumption.
           (* Prove the current digit is in fact a digit, because we're in the loop. *)
-          split. unfold is_digit; split; rewrite <- ACC. rewrite MEM in *.
-          apply N.leb_gt in BC1.
-            (* Admitting because idk how to prove this yet *)
-            admit.
-            admit.
+          rewrite MEM in *. apply N.leb_gt in BC1. apply msub_lt_9 in BC1.
+          destruct BC1 as (GE48 & LT57).
+          split. unfold is_digit; split; rewrite <- ACC.
+            assumption.
+            apply N.lt_le_incl. assumption.
           (* X1 holds the index of the current char. *)
           split. psimpl; psimpl in ACC. assumption.
           (* X2 holds the digit value of the current char. *)
-          split. psimpl. unfold digit_value. psimpl. rewrite MEM in *.
-          apply N.leb_gt in BC1.
-            (* Admitting because idk how to prove this yet *)
-            admit.
+          split. psimpl. unfold digit_value. psimpl. apply msub_mod_irrelevant. split; assumption.
           (* X4 is 10 (the multiplier). *)
           split. psimpl; assumption.
           (* MEM *)
           psimpl; assumption.
+
     (* 1048680 -> EXIT *)
-    step.
-      (* Case 1: *)
-      specialize PRE with (i:=0). destruct PRE; destruct H; rename x into j; rename x0 into k; rename H into PRE.
-      unfold inv_post_digit_loop in PRE. destruct PRE as (DSTART & ALLD & NONDIGIT).
-      destruct DSTART as (WS & SIGN). destruct SIGN as [SIGN|NOSIGN].
-        destruct SIGN as (SIGN & X3 & J). destruct X3 as [X3|X3].
-          rewrite X3 in BC. simpl in BC. discriminate.
-          (* gg *)
+    (* Case 1: Number is negative so cbnz branches *)
+    step. intros. specialize PRE with (i:=i). destruct PRE; destruct H. rename x into j; rename x0 into k.
+    unfold inv_post_digit_loop in H. destruct H as (DSTART & ALLD & NOND & MEM). exists j, k.
+    unfold inv_postcondition. 
+      split; try assumption.
+      split; assumption.
+    (* Case 2: Number is positive so cbnz does not branch *)
+    step. intros. specialize PRE with (i:=i). destruct PRE; destruct H. rename x into j; rename x0 into k.
+    unfold inv_post_digit_loop in H. destruct H as (DSTART & ALLD & NOND & MEM). exists j, k.
+    unfold inv_postcondition. 
+      split; try assumption.
+      split; assumption.
 Admitted.

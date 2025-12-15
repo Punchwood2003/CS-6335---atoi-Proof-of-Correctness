@@ -216,6 +216,12 @@ Section Invariants.
     ¬is_digit (mem Ⓑ[p ⊕ j ⊕ k]) /\
     s V_MEM64 = mem.
 
+  Definition inv_postcondition (i j k : N) (s : store) : Prop :=
+    digit_start i j s /\ (* The digits should start at index j *)
+    all_digits j k /\ (* There are j-k digits from mem[p+j] to mem[p+j+k-1] *)
+    (* TODO: Use self-specified atoi to check result *)
+    s V_MEM64 = mem.
+
   (* Unified invariant set at each checkpoint *)
   Definition atoi_invs (t : trace) : option Prop :=
     match t with
@@ -223,14 +229,14 @@ Section Invariants.
       match a with
       | 1048576 => Some (inv_entry s)
       | 1048580 => Some (∃ i, inv_whitespace_loop i s)
-      | 1048636 => Some (∀ i, inv_inside_whitespace_loop i s)
+      | 1048636 => Some (∃ i, inv_inside_whitespace_loop i s)
       | 1048600 => Some (∀ i, inv_after_whitespace i s)
       | 1048620 => Some (∀ i, inv_sign_exists i s)
       | 1048624 => Some (∀ i, ∃ j, inv_post_sign i j s)
       | 1048652 => Some (∀ i, ∃ j k acc, inv_digit_multiply i j k acc s)
       | 1048664 => Some (∀ i, ∃ j k, inv_digit_loop i j k s)
       | 1048680 => Some (∀ i, ∃ j k, inv_post_digit_loop i j k s)
-(*       | 1048688 => Some (postcondition s) *)
+      | 1048688 => Some (∀ i, ∃ j k, inv_postcondition i j k s)
       | _ => None  (* other addresses are unconstrained *)
       end
     | _ => None
