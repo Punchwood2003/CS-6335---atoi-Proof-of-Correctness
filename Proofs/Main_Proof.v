@@ -104,9 +104,49 @@ Proof.
       right; simpl in H; symmetry; assumption.
 Qed.
 
+Lemma lor_1_three_cases:
+  forall (b1 b2 : bool), 
+    (if b1 then 0 else 1) .| (if b2 then 1 else 0) = 1 -> (b1 = true /\ b2 = true) \/ (b1 = false /\ b2 = true) \/ (b1 = false /\ b2 = false).
+Proof.
+  intros. destruct b1 eqn:B1.
+    destruct b2 eqn:B2.
+      left. split; reflexivity.
+      simpl in H. discriminate.
+    destruct b2 eqn:B2.
+      right. left. split; reflexivity.
+      right. right. split; reflexivity.
+Qed.
+
+Lemma get_rid_of_pos:
+  forall (b : bool) (n m x : N),
+    (if b then n else m) = x -> x = n \/ x = m.
+Proof.
+  intros.
+  destruct b.
+    left; symmetry; assumption.
+    right; symmetry; assumption.
+Qed.
+
+Ltac digit_start_persists DSTART := 
+  unfold digit_start in *; destruct DSTART as (WS & SIGN); split;
+    try assumption;
+    destruct SIGN as [SIGN|NOSIGN];
+      destruct SIGN as (SIGN & X3 & J); left; split;
+        unfold sign_indicator_exists in *; try assumption;
+        split; psimpl;
+          try assumption;
+          psimpl in J; assumption;
+      destruct NOSIGN as (NOSIGN & X3 & J); right; split;
+        unfold sign_indicator_exists in *; try assumption;
+        split; psimpl;
+          try assumption;
+          psimpl in J; try assumption.
+
+Check atoi_pre.
+
 Theorem atoi_partial_correctness:
   forall s t s' x' mem p 
-    (PRE: atoi_pre p s t x' s')
+    (PRE: atoi_pre mem p s t x' s')
     (MEM: s V_MEM64 = mem),
   satisfies_all atoi_lo_atoi_armv8 (atoi_invs mem p) atoi_exit ((x',s')::t).
 Proof.
@@ -123,12 +163,14 @@ Proof.
 
   (* 1048576 -> 1048580, start of whitespace loop *)
   (* Prove that we have either skipped over j bytes of whitespace where j < i, or i = 0. *)
-  step. unfold inv_whitespace_loop. unfold all_whitespace_until. exists 0. split.
+  step. destruct PRE as (X0 & MEM). unfold inv_whitespace_loop. unfold all_whitespace_until. exists 0. split.
     right; reflexivity.
-    psimpl; reflexivity.
+    split.
+      psimpl; assumption.
+      psimpl; assumption.
 
   (* 1048580 -> 1048636 and 1048580 -> 1048600 *)
-  destruct PRE as (i & H0 & H1). unfold all_whitespace_until in H0. destruct H0.
+  destruct PRE as (i & H0 & H1 & MEM). unfold all_whitespace_until in H0. destruct H0.
     (* 1048580 -> 1048636: Prove that the current character is whitespace. *)
     admit.
     (* 1048580 -> 1048600: Prove that the current character is NOT whitespace, 
@@ -140,7 +182,7 @@ Proof.
   step. step.
     (* BC: Character is a plus sign, so we know a sign exists. *)
     step. step. intros. specialize PRE with (i:=i). 
-    destruct PRE as (WS & REG); destruct WS as (NUMWS & NONWS); destruct REG as (X0 & X1).
+    destruct PRE as (WS & X0 & X1 & MEM); destruct WS as (WS & NONWS).
     unfold inv_sign_exists. repeat split.
       (* Our knowledge of the whitespace is maintained. *)
       unfold all_whitespace_until; assumption. assumption.
@@ -151,11 +193,13 @@ Proof.
       psimpl; assumption.
       (* R_X3 now contains either 0 or 1; in this case, 0 because it's a plus sign *)
       psimpl; left; reflexivity.
+      (* MEM *)
+      psimpl; assumption.
     (* BC: Character is NOT a plus sign *)
     step. step.
       (* BC0: Character is a minus sign *)
       step. intros. specialize PRE with (i:=i). 
-      destruct PRE as (WS & REG); destruct WS as (NUMWS & NONWS); destruct REG as (X0 & X1).
+      destruct PRE as (WS & X0 & X1 & MEM); destruct WS as (WS & NONWS).
       unfold inv_sign_exists. repeat split.
         (* Our knowledge of the whitespace is maintained. *)
         unfold all_whitespace_until; assumption. assumption.
@@ -166,9 +210,11 @@ Proof.
         psimpl; assumption.
         (* R_X3 now contains either 0 or 1; in this case, 1 because it's a minus sign *)
         psimpl; right; reflexivity.
+        (* MEM *)
+        psimpl; assumption.
       (* BC0: Character is NOT a minus sign (1048624) *)
       step. step. intros. specialize PRE with (i:=i). 
-      destruct PRE as (WS & REG); destruct WS as (NUMWS & NONWS); destruct REG as (X0 & X1). 
+      destruct PRE as (WS & X0 & X1 & MEM); destruct WS as (WS & NONWS).
       (* If we reach here, this is no sign indicator. The digits should start at the first non-whitespace index. *)
       exists i. unfold inv_post_sign. split.
         (* We know the index of digit start; it's where we are now ! *)
@@ -185,11 +231,13 @@ Proof.
         split. unfold all_digits. intros. apply N.nlt_0_r in H. exfalso; assumption.
         (* R_X1 has not been incremented because there is no sign indicator, so it's already
            at the index at which digits should start. *)
+        split. psimpl; assumption.
+        (* MEM *)
         psimpl; assumption.
 
   (* 1048620 -> 1048624: There is a sign indicator. *)
-  step. intros. specialize PRE with (i:=i). 
-  destruct PRE as (WS & H); destruct H as (SIGN & H); destruct H as (X1 & X3).
+  step. intros. specialize PRE with (i:=i).
+  destruct PRE as (WS & SIGN & X1 & X3 & MEM).
   exists (i+1). unfold inv_post_sign. split.
     (* We know the index of digit start. 
        Since there is a sign indicator, it should be first nonwhitespace + 1. *)
@@ -205,23 +253,25 @@ Proof.
         (* We have seen 0 valid digits so far; base case for setting up the main loop *)
         split. unfold all_digits. intros. apply N.nlt_0_r in H. exfalso; assumption.
         (* Because a sign indicator exists, R_X1 is incremented at 1048620. *)
-        psimpl. rewrite X1. psimpl; reflexivity.
+        psimpl. rewrite X1. split. psimpl; reflexivity.
+        (* MEM *)
+        psimpl; assumption.
 
   (* 1048624 -> 1048664: From the main loop setup (inv_post_sign) to inside the loop's conditional. *)
   step. step. step. intros.
   (* Precondition work *)
-  specialize PRE with (i:=i); unfold inv_post_sign, inv_sign_exists, sign_indicator_exists in PRE.
-  destruct PRE; destruct H as (DIGIT & X1); pose DIGIT as D2; destruct D2 as (WS & SIGN); 
-  destruct WS as (WS & NONWS); rename x into j. destruct SIGN as [SIGN|SIGN].
+  specialize PRE with (i:=i).
+  destruct PRE; rename x into j. destruct H as (DSTART & ALLD & X1 & MEM); destruct DSTART as (WS & SIGN). 
+  destruct SIGN as [SIGN|SIGN].
     (* Sign indicator exists. *)
     destruct SIGN as (SIGN & X3); destruct X3 as (X3 & J). exists (i+1), 0. 
     unfold inv_digit_loop. split.
       (* We know the index of digit start, and that R_X1 contains the index of digit start. *)
       unfold inv_post_sign. split.
         (* We know the index of digit start. *)
-        unfold digit_start. psimpl. repeat split.
+        unfold digit_start. psimpl.
           (* Our knowledge of the whitespace is maintained. *)
-          assumption. assumption.
+          assumption.
           (* Examine the case in which a sign indicator exists. *)
           left. split.
             (* A valid sign indicator exists. *)
@@ -233,16 +283,16 @@ Proof.
           (* We have seen 0 valid digits so far. *)
           split. subst. destruct X1; assumption.
           (* Because a sign indicator exists, j = i+1, and this is what R_X1 contains. *)
-          subst. psimpl in X1; psimpl. destruct X1. split; try assumption; try reflexivity.
+          subst. psimpl in X1; psimpl. repeat split; try assumption.
     (* Sign indicator does not exist. *)
     destruct SIGN as (SIGN & X3); destruct X3 as (X3 & J). exists i, 0.
     unfold inv_digit_loop. split.
       (* We know the index of digit start, and that R_X1 contains the index of digit start. *)
       unfold inv_post_sign. split.
         (* We know the index of digit start. *)
-        unfold digit_start. psimpl. repeat split.
+        unfold digit_start. psimpl.
           (* Our knowledge of the whitespace is maintained. *)
-          assumption. assumption.
+          assumption.
           (* Examine the case in which no sign indicator exists. *)
           right. split.
             (* No sign indicator exists. *)
@@ -254,18 +304,35 @@ Proof.
           (* We have seen 0 valid digits so far. *)
           split. subst. destruct X1; assumption.
           (* Because no sign indicator exists, j = i, and this is what R_X1 contains. *)
-          subst. psimpl in X1; psimpl. destruct X1. split; try assumption; try reflexivity.
+          subst. psimpl in X1; psimpl. repeat split; try assumption.
 
   (* 1048636 -> 1048580 - From inside whitespace loop back to the start of it*)
   step. step.
-  specialize PRE with (i:=0). destruct PRE as (WSPRE & WS). destruct WS as (WS & X0 & X1).
+  specialize PRE with (i:=0). destruct PRE as (WSPRE & WS & X0 & X1 & MEM).
   unfold inv_whitespace_loop, all_whitespace_until. exists 1. split.
     left. psimpl.
     psimpl. psimpl in WS. assumption.
-    psimpl. rewrite X1. psimpl; reflexivity.
+    psimpl. rewrite X1. split. psimpl; reflexivity. 
+    (* MEM *)
+    assumption.
 
   (* 1048652 -> 1048664 *)
-  step. step. step. admit.
+  (* Setup *)
+  step. step. step. intros. specialize PRE with (i:=i). destruct PRE; destruct H; destruct H.
+  rename x into j; rename x0 into k; rename x1 into acc. exists j, (k+1).
+  unfold inv_digit_multiply in H. destruct H as (DSTART & ALLD & ISDIGIT & X1 & X2 & X4 & MEM).
+  (* Proof *)
+  unfold inv_digit_loop. split.
+    (* The digit start index remains the same. *)
+    digit_start_persists DSTART.
+    (* all_digits *)
+    split. apply inductive_all_digits; assumption.
+    (* X1 *)
+    split. psimpl. rewrite X1. psimpl; reflexivity.
+    (* X4 *)
+    split. psimpl; assumption.
+    (* MEM *)
+    psimpl; assumption.
 
   (* 1048664 -> 1048652 and 1048664 -> 1048680 *)
   step. step. step. step.
@@ -273,29 +340,15 @@ Proof.
     intro i. specialize PRE with (i:=i). destruct PRE; destruct H. rename x into j; rename x0 into k.
     apply zero_lor_zero in BC. destruct BC as (BC1 & BC2). 
     apply trivial_if in BC1. apply trivial_if_false in BC2.
-    unfold inv_digit_loop in H. destruct H as (DSTART & ALLD & X1 & X4).
+    unfold inv_digit_loop in H. destruct H as (DSTART & ALLD & X1 & X4 & MEM).
     exists j, k. unfold inv_post_digit_loop. split.
       (* The digit start index remains the same. *)
-      unfold digit_start in *. destruct DSTART as (WS & SIGN). split.
-        assumption.
-        destruct SIGN as [SIGN|NOSIGN].
-          (* Case 1: Sign indicator exists *)
-          left. destruct SIGN as (SIGN & X3 & J). psimpl in J. unfold sign_indicator_exists in *. repeat split; psimpl.
-            (* The sign indicator is valid. *)
-            psimpl in SIGN; assumption. 
-            (* X3 is either 0 or 1, and j = i+1 *)
-            assumption. assumption.
-          (* Case 2: Sign indicator does not exist *)
-          right. destruct NOSIGN as (NOSIGN & X3 & J). unfold sign_indicator_exists in *. repeat split; psimpl.
-            (* No valid sign indicator exists *)
-            psimpl in NOSIGN; assumption.
-            (* X3 is 0, and j = i *)
-            assumption. assumption.
+      digit_start_persists DSTART.
       (* all_digits *)
       split. assumption.
       (* The current character is not a digit, and that's why we have terminated the loop. *)
-      unfold is_digit. 
-      rewrite <- X1. unfold "~". intros. destruct H.
+      split. unfold is_digit. rewrite <- X1. rewrite MEM in *. apply N.eqb_neq in BC2.
+      unfold "~". intros. destruct H as (H1 & H2).
         (* Admitting this goal because I think it's provable but I can't prove it LOL 
            1. BC1 is basically saying, with unsigned 32-bit integer arithmetic,
               that the byte at mem[s R_X1] - 32 is > 9, meaning mem[s R_X1] must hold
@@ -304,52 +357,91 @@ Proof.
 
            I think you can reach a contradiction in the context space at this point.*)
         admit.
+      (* MEM *)
+      psimpl; assumption.
       (* Cleaup from using trivial_if *)
       unfold "~"; intros; discriminate.
     (* 1048664 -> 1048652 *)
     (* Precondition unfolding *)
     intro i. specialize PRE with (i:=i). unfold inv_digit_loop, inv_post_sign in PRE.
     destruct PRE; rename x into j; destruct H; rename x into k;
-    destruct H as (DSTART & H); destruct DSTART as (WS & SIGN); 
-    destruct H as (ALLD & H); destruct H as (ACC & X4).
+    destruct H as (DSTART & H); 
+    destruct H as (ALLD & H); destruct H as (ACC & X4 & MEM).
     rename p0 into x.
     (* Working with the branch condition *)
-    pose BC as X. apply lor_0_or_1 in X. destruct X as [X|X].
-    (* Case 1: BC evaluates to 0 *)
-    (* We already proved this for 1048664 -> 1048680 above. 
-       If BC evaluates to 0 then we actually do not branch. 
-       This case should never happen here, but idk how to prove it yet. *)
-    admit.
-    (* Case 2: BC evaluates to 1, and BC1 = 0 / BC2 = 1 *)
-    rewrite X in BC. destruct (if 9 <=? msub 32 (s1 V_MEM64 Ⓑ[ s1 R_X1 ]) 48 then 0 else 1) eqn:BC1 in BC.
-    apply trivial_if in BC1. simpl in BC. apply trivial_if in BC. apply N.eqb_eq in BC. rename BC into BC2.
-    exists j, k, j. unfold inv_digit_multiply. split.
-      (* digit_start still holds true *)
-      unfold digit_start; split.
-        assumption.
-        destruct SIGN.
-          left. unfold sign_indicator_exists in *; destruct H as (SIGN & X3 & J); split; try assumption.
-          psimpl. psimpl in J. split; assumption.
-          right. unfold sign_indicator_exists in *; destruct H as (SIGN & X3 & J); split; try assumption.
-          psimpl. psimpl in J. split; assumption.
-      (* all_digits j k still holds *)
-      split. assumption.
-      (* Since we're inside the digit loop, we know this digit is valid. *)
-      split. unfold is_digit. split; rewrite <- ACC.
-        (* Admitting these two because I don't know how to work with V_MEM64.
-           BC2 says [X1] = 57 which fulfills these inequalities trivially. *)
-        admit. 
-        admit.
-      (* We know X1 points to the current character when we're in the loop. *)
-      split. psimpl. psimpl in ACC; assumption.
-      (* We are *)
-      split. rewrite BC2. unfold digit_value. psimpl.
-        (* Admitted because idk how to deal with V_MEM64. but trust me, it's TRUE !! *)
-        admit.
-      (* X4 = 10. *)
-      psimpl; assumption.
-      (* Cleanup from using trivial_if *)
-      unfold "~"; intros; discriminate.
-      unfold "~"; intros; discriminate.
-    (* Case 3: *)
+    pose BC as X. apply lor_0_or_1 in X. destruct X as [|X].
+      (* This case is already handled above in the proof for 1048664 -> 1048680.
+         It's impossible for this case to arise and for the code to also branch... i think... *)
+      rewrite H in BC. apply zero_lor_zero in BC. destruct BC as (BC1 & BC2).
+      admit.
+      (* Complete the other 3 possible cases *) 
+      rewrite X in BC. clear X. apply lor_1_three_cases in BC. destruct BC as [BC|[BC|BC]]. 
+        destruct BC as (BC1 & BC2); apply N.eqb_eq in BC2. exists j, k, j. unfold inv_digit_multiply. split.
+          (* digit_start *)
+          digit_start_persists DSTART.
+          (* all_digits *)
+          split. assumption.
+          (* Prove the current digit is in fact a digit, because we're in the loop. *)
+          split. rewrite MEM in *. unfold is_digit; split; rewrite <- ACC; rewrite BC2.
+            apply N.le_sub_l with (n:=57) (m:=9).
+            reflexivity.
+          (* X1 holds the index of the current char. *)
+          split. psimpl; psimpl in ACC. assumption.
+          (* X2 holds the digit value of the current char. *)
+          split. psimpl. rewrite BC2. unfold digit_value. psimpl. rewrite MEM in *. rewrite BC2.
+          reflexivity.
+          (* X4 is 10 (the multiplier). *)
+          split. psimpl; assumption.
+          (* MEM *)
+          psimpl; assumption.
+        destruct BC as (BC1 & BC2); apply N.eqb_eq in BC2. exists j, k, j. unfold inv_digit_multiply.
+          (* digit_start *)
+          split. digit_start_persists DSTART.
+          (* all_digits *)
+          split. assumption.
+          (* Prove the current digit is in fact a digit, because we're in the loop. *)
+          split. rewrite MEM in *. apply N.leb_gt in BC1. rewrite BC2 in BC1. 
+          assert (msub 32 57 48 = 9). reflexivity. rewrite H in BC1. apply N.lt_irrefl in BC1.
+          exfalso. apply BC1.
+          (* X1 holds the index of the current char. *)
+          split. psimpl; psimpl in ACC. assumption.
+          (* X2 holds the digit value of the current char. *)
+          split. psimpl. rewrite BC2. unfold digit_value. psimpl. rewrite MEM in *. rewrite BC2.
+          reflexivity.
+          (* X4 is 10 (the multiplier). *)
+          split. psimpl; assumption.
+          (* MEM *)
+          psimpl; assumption.
+        (* The current char is a digit between 0-8 *)
+        destruct BC as (BC1 & BC2). apply N.eqb_neq in BC2. exists j, k, j. unfold inv_digit_multiply.
+          (* digit_start *)
+          split. digit_start_persists DSTART.
+          (* all_digits *)
+          split. assumption.
+          (* Prove the current digit is in fact a digit, because we're in the loop. *)
+          split. unfold is_digit; split; rewrite <- ACC. rewrite MEM in *.
+          apply N.leb_gt in BC1.
+            (* Admitting because idk how to prove this yet *)
+            admit.
+            admit.
+          (* X1 holds the index of the current char. *)
+          split. psimpl; psimpl in ACC. assumption.
+          (* X2 holds the digit value of the current char. *)
+          split. psimpl. unfold digit_value. psimpl. rewrite MEM in *.
+          apply N.leb_gt in BC1.
+            (* Admitting because idk how to prove this yet *)
+            admit.
+          (* X4 is 10 (the multiplier). *)
+          split. psimpl; assumption.
+          (* MEM *)
+          psimpl; assumption.
+    (* 1048680 -> EXIT *)
+    step.
+      (* Case 1: *)
+      specialize PRE with (i:=0). destruct PRE; destruct H; rename x into j; rename x0 into k; rename H into PRE.
+      unfold inv_post_digit_loop in PRE. destruct PRE as (DSTART & ALLD & NONDIGIT).
+      destruct DSTART as (WS & SIGN). destruct SIGN as [SIGN|NOSIGN].
+        destruct SIGN as (SIGN & X3 & J). destruct X3 as [X3|X3].
+          rewrite X3 in BC. simpl in BC. discriminate.
+          (* gg *)
 Admitted.

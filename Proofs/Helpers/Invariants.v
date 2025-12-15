@@ -29,6 +29,24 @@ Section Invariants.
   Definition all_digits (j k : N) : Prop :=
     ∀ i, i < k -> is_digit (mem Ⓑ[p ⊕ j ⊕ i]).
 
+  Lemma inductive_all_digits : forall (j k : N),
+    all_digits j k -> is_digit (mem Ⓑ[p ⊕ j ⊕ k]) -> all_digits j (k+1).
+  Proof.
+    intros j k Hall_digits Hdigit.
+    unfold all_digits in *.
+    intros i Hi.
+    (* Hi : i < k + 1, need to show is_digit (mem Ⓑ[p ⊕ j ⊕ i]) *)
+    (* We prove by cases on whether i < k, i = k, or i > k *)
+    destruct (N.lt_total i k) as [Hlt | [Heq | Hgt]].
+    + (* Case: i < k *)
+      apply Hall_digits. exact Hlt.
+    + (* Case: i = k *)
+      subst. exact Hdigit.
+    + (* Case: i > k, contradicts i < k+1 *)
+      (* k < i and i < k+1 is impossible *)
+      exfalso. lia.
+  Qed.
+
   (* ========== Specification Components ========== *)
 
   (* Index of first non-whitespace character *)
@@ -57,7 +75,8 @@ Section Invariants.
      The only thing we know at the entry point is that x0 points to input string.
      After the first instruction is executed, x1 will also point to the input string. *)
   Definition inv_entry (s : store) : Prop :=
-    s R_X0 = p.
+    s R_X0 = p /\
+    s V_MEM64 = mem.
 
   Definition atoi_pre t x' s' :=
     startof t (x', s') = (Addr 0x100000, s0) /\ (* We start execution of atoi at 0x100000 *)
@@ -68,7 +87,8 @@ Section Invariants.
      We've skipped i characters, haven't found non-whitespace yet *)
   Definition inv_whitespace_loop (i : N) (s : store) : Prop :=
     all_whitespace_until i /\
-    s R_X1 = p ⊕ i.
+    s R_X1 = p ⊕ i /\
+    s V_MEM64 = mem.
 
   (* 1048636 - Invariant at the first statement inside the whitespace-skipping loop *)
   (* If we are here, the current character should indeed be whitespace. *)
@@ -76,7 +96,8 @@ Section Invariants.
     all_whitespace_until i /\
     is_whitespace (mem Ⓑ[p ⊕ i]) /\
     s R_X0 = mem Ⓑ[p ⊕ i] /\
-    s R_X1 = p ⊕ i.
+    s R_X1 = p ⊕ i /\
+    s V_MEM64 = mem.
 
   (* 1048600 - Invariant at sign-check section
      At this point we know how much whitespace there is.
@@ -85,7 +106,8 @@ Section Invariants.
   Definition inv_after_whitespace (i : N) (s : store) : Prop :=
     first_nonwhitespace i /\
     s R_X0 = mem Ⓑ[p ⊕ i] /\
-    s R_X1 = p ⊕ i.
+    s R_X1 = p ⊕ i /\
+    s V_MEM64 = mem.
 
   (* 1048620 - Invariant after parsing an existing sign character.
      If we are here, there for sure is a sign indicator. *)
@@ -93,7 +115,8 @@ Section Invariants.
     first_nonwhitespace i /\
     sign_indicator_exists i s /\
     s R_X1 = p ⊕ i /\
-    (s R_X3 = 0 \/ s R_X3 = 1).
+    (s R_X3 = 0 \/ s R_X3 = 1) /\
+    s V_MEM64 = mem.
 
   (* 1048624 - Invariant placed right after processing the sign indicator (1048624). We know that EITHER:
      1. A sign exists and R_X3 is either 0 or 1, or
@@ -102,7 +125,8 @@ Section Invariants.
   Definition inv_post_sign (i j : N) (s : store) : Prop :=
     digit_start i j s /\
     all_digits j 0 /\
-    s R_X1 = p ⊕ j.
+    s R_X1 = p ⊕ j /\
+    s V_MEM64 = mem.
 
   (* 1048652 - Invariant at digit-computation phase
      We've multiplied the accumulator by 10, now subtracting the digit value *)
@@ -112,7 +136,8 @@ Section Invariants.
     is_digit (mem Ⓑ[p ⊕ j ⊕ k]) /\ (* we know this digit is valid *)
     s R_X1 = p ⊕ j ⊕ k /\
     s R_X2 = digit_value (mem Ⓑ[s R_X1]) /\
-    s R_X4 = 10.
+    s R_X4 = 10 /\
+    s V_MEM64 = mem.
 
   (* 1048664 - Invariant at digit-parsing loop: 
      We're in the loop parsing digits. We know:
@@ -125,14 +150,16 @@ Section Invariants.
     digit_start i j s /\
     all_digits j k /\  (* we've seen k valid digits so far *)
     s R_X1 = p ⊕ j ⊕ k /\
-    s R_X4 = 10.   (* multiplier *)
+    s R_X4 = 10 /\   (* multiplier *)
+    s V_MEM64 = mem.
 
   (* 1048680 - Invariant after post digit loop 
      Main takeaway: The memory from [p+j to p+j+k-1] is the number to be converted. *)
   Definition inv_post_digit_loop (i j k : N) (s : store) : Prop :=
     digit_start i j s /\
     all_digits j k /\
-    ¬is_digit (mem Ⓑ[p ⊕ j ⊕ k]).
+    ¬is_digit (mem Ⓑ[p ⊕ j ⊕ k]) /\
+    s V_MEM64 = mem.
 
   (* Unified invariant set at each checkpoint *)
   Definition atoi_invs (t : trace) : option Prop :=
