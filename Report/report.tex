@@ -186,7 +186,8 @@
 \ifCLASSOPTIONcompsoc
  \usepackage[caption=false,font=normalsize,labelfont=sf,textfont=sf]{subfig}
 \else
- \usepackage[caption=false,font=footnotesize]{subfig}
+ %\usepackage[caption=false,font=footnotesize]{subfig}
+ \usepackage{caption}
 \fi
 % subfig.sty, written by Steven Douglas Cochran, is the modern replacement
 % for subfigure.sty, the latter of which is no longer maintained and is
@@ -414,14 +415,14 @@
 
 % As a general rule, do not put math, special symbols or citations
 % in the abstract or keywords.
-\begin{abstract}
-TODO.
-\end{abstract}
+%\begin{abstract}
+%TODO.
+%\end{abstract}
 
 % Note that keywords are not normally used for peerreview papers.
-\begin{IEEEkeywords}
-Language-Based Security, Proof of Correctness, TODO
-\end{IEEEkeywords}
+%\begin{IEEEkeywords}
+%Language-Based Security, Proof of Correctness, TODO
+%\end{IEEEkeywords}
 
 
 \IEEEpeerreviewmaketitle
@@ -442,52 +443,37 @@ Language-Based Security, Proof of Correctness, TODO
 % 
 % Here we have the typical use of a "T" for an initial drop letter
 % and "HIS" in caps to complete the first word.
-\IEEEPARstart{T}{odo} (TODO)
+\IEEEPARstart{W}{e} have been working on proving the formal correctness of the \textbf{atoi} function using Picinae on the ARMv8 architecture. This will help to advance the state-of-the-art and improve the Picinae system.
+\section{Overview of atoi} \label{overview_atoi}
+The \textbf{atoi} function takes a given input string, and converts the "initial portion" of it into a corresponding 32-bit integer. The initial portion of a string starts from the beginning of the string and ends after the first numeric sequence in the string. Save for a "+" or "-" to indicate the sign of the numeric sequence in the string, only white space can intervene between the beginning of the string and the first numeric sequence in order to produce a "valid" output. If this rule is violated, we call the input "ill-formed", and \textbf{atoi} will return \textbf{0}. Figure 1 shows a control flow graph for the disassembly of \textbf{atoi}.
+\begin{figure*}[t]
+	\centering
+	\captionsetup{justification=centering,singlelinecheck=true,font=small}
+	\includegraphics[width=\linewidth]{atoi_CFG.jpg}
+	\caption{atoi CFG}
+\end{figure*}
 
-\section{Motivation} \label{motiviation}
+\section{Implementation Strategy} \label{implementation}
 TODO
 
-\section{Problem Definition} \label{problem_definition}
-TODO
+\section{Challenges} \label{challenges}
+Throughout the course of our work on this project, we encountered a few challenges that made proving the correctness of \textbf{atoi} more complicated than originally anticipated. TODO
 
-\subsection{Primal Point Generation} \label{primal_point_generation}
-TODO
+\section{Breakdown of Contributions} \label{contributions}
+\begin{itemize}
+	\item Matthew Sheldon TODO
+	\item Isabella Pereira TODO
+	\item Jarrod Rogers helped with organizing the project and wrote the majority of this report.
+	\item Naja-Lee Habboush TODO
+	\item Brandon Wang made the control flow graph (Figure 1) and TODO
+\end{itemize}
 
-\subsection{Dual Point Generation} \label{dual_point_generation}
-TODO
-
-\subsection{Verification Algorithm Variant} \label{verification_algorithm}
-TODO
-
-\subsection{Quadratic Residue Distribution} \label{qrd}
-TODO
-
-\section{Subtractive Quadratic Residue Sampling} \label{sqrs}
-TODO
-
-\section{Comparative Performance} \label{comparative_performance}
-TODO
-
-\subsection{Algorithm Througput} \label{throughput}
-TODO
-
-\subsection{Algorithm ``Uniform Randomness''} \label{randomness}
-TODO
-
-\subsubsection{Chi-Squared Test} \label{chi}
-TODO
-
-\subsubsection{COV Measure} \label{cov}
-TODO
-
-\subsubsection{Mesh Ratio} \label{mesh}
-TODO
 
 \section{Future Work} \label{future_work}
 TODO
 
 \section{Conclusion} \label{conclusion}
-TODO
+As a team we have learned a lot from working on the correctness for \textbf{atoi}. iEven though there is still more work to be done, we are proud of what we have accomplished and the work we have contributed towards advancing the state-of-the-art.
 
 % An example of a floating figure using the graphicx package.
 % Note that \label must occur AFTER (or within) \caption.
