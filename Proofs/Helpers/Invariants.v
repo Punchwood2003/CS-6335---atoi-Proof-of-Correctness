@@ -102,6 +102,88 @@ Section Invariants.
     lia.
   Qed.
 
+  Lemma msub_lt_9 :
+    forall n,
+      n < 256 ->  (* n is a byte value *)
+      msub 32 n 48 < 9 ->
+      48 <= n /\ n < 57.
+  Proof.
+    intros n Hbyte Hlt.
+    unfold msub in Hlt.
+
+    rewrite (N.mod_small 48 (2^32)) in Hlt by lia.
+
+    destruct (N.lt_ge_cases n 48) as [Hnlt | Hnge].
+
+    - (* n < 48 *)
+      exfalso.
+      assert (Hnowrap : n + (2^32 - 48) < 2^32) by lia.
+      rewrite (N.mod_small (n + (2^32 - 48)) (2^32)) in Hlt
+        by exact Hnowrap.
+      lia.
+
+    - (* n >= 48 *)
+      assert (Hrewrite : n + (2 ^ 32 - 48) = (n - 48) + 2 ^ 32) by lia.
+      rewrite Hrewrite in Hlt.
+
+      rewrite N.Div0.add_mod in Hlt by lia.
+      rewrite N.Div0.mod_same in Hlt by lia.
+      rewrite N.add_0_r in Hlt.
+
+      (* remove double modulo correctly *)
+      rewrite N.Div0.mod_mod in Hlt by lia.
+
+      (* now Hlt : (n - 48) mod 2^32 < 9 *)
+      (* Since n < 256, we have n - 48 < 256 - 48 = 208 < 2^32 *)
+      assert (Hbound: n - 48 < 2^32) by lia.
+      rewrite (N.mod_small (n - 48) (2^32)) in Hlt by exact Hbound.
+      
+      (* Now Hlt: n - 48 < 9 *)
+      split.
+      + exact Hnge.
+      + lia.
+  Qed.
+
+  Lemma msub_mod_irrelevant :
+    forall n,
+      48 <= n < 57 ->
+      msub 32 n 48 = n - 48.
+  Proof.
+    intros n [Hge Hlt].
+
+    unfold msub.
+
+    (* simplify 48 mod 2^32 *)
+    rewrite (N.mod_small 48 (2^32)) by lia.
+
+    (* rewrite subtraction as addition *)
+    assert (Hrewrite : n + (2^32 - 48) = (n - 48) + 2^32) by lia.
+    rewrite Hrewrite.
+
+    (* push mod inside *)
+    rewrite N.Div0.add_mod by lia.
+    rewrite N.Div0.mod_same by lia.
+    rewrite N.add_0_r.
+
+    (* collapse both mods *)
+    rewrite (N.mod_small (n - 48) (2^32)) by lia.
+    apply N.mod_small.
+    lia.
+  Qed.
+
+  (* Bytes read from memory are always in the range [0, 255] *)
+  Lemma mem_byte_bound :
+    forall (addr : addr),
+      mem Ⓑ[addr] < 256.
+  Proof.
+    intro addr.
+    (* mem Ⓑ[addr] is notation for getmem 64 LittleE 1 mem addr *)
+    (* Apply getmem_1: getmem w e 1 m a = getbyte m a w *)
+    rewrite getmem_1.
+    (* Apply getbyte_bound: getbyte m a w < 2^8 = 256 *)
+    apply getbyte_bound.
+  Qed.
+
   (* ========== Specification Components ========== *)
 
   (* Index of first non-whitespace character *)
