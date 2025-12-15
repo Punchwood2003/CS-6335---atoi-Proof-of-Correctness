@@ -127,14 +127,6 @@ Proof.
     right; symmetry; assumption.
 Qed.
 
-Lemma msub_lt_9:
-  forall n, msub 32 n 48 < 9 -> 48 <= n < 57.
-Admitted.
-
-Lemma msub_mod_irrelevant:
-  forall n, 48 <= n < 57 -> msub 32 n 48 = n - 48.
-Admitted.
-
 Ltac digit_start_persists DSTART := 
   unfold digit_start in *; destruct DSTART as (WS & SIGN); split;
     try assumption;
@@ -448,6 +440,8 @@ Proof.
           split. psimpl; assumption.
           (* MEM *)
           psimpl; assumption.
+        (* Prove mem Ⓑ[ s1 R_X1 ] < 256 using mem_byte_bound *)
+        apply mem_byte_bound.
 
     (* 1048680 -> EXIT *)
     (* Case 1: Number is negative so cbnz branches *)
