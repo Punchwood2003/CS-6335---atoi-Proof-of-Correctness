@@ -38,7 +38,7 @@ The layout and build scripts of this project assumes that...
 ├── Proofs/                     Correctness proof for atoi
 │   ├── Lemmas/                 Supporting lemmas
 │   └── Main_Proof.v            Main proof file
-├── Report/                     All report-related artifacts
+├── Report/                       All report-related artifacts
 ├── _CoqProject                 Coq project configuration
 ├── clean.bat
 ├── first_time_setup.bat
