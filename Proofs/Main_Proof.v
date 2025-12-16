@@ -56,7 +56,6 @@ Definition atoi_exit (t:trace) : bool :=
   end.
 
 (* ========== Correctness Theorems ========== *)
-
 Ltac step := time arm8_step; try exact I.
 
 Ltac ignore_vars v ::= constr:(match v with

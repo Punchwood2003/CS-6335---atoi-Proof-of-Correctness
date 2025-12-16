@@ -34,19 +34,21 @@ The layout and build scripts of this project assumes that...
 
 ## Project Structure
 ```
-├── Picinae/                    Picinae is a git submodule (master branch of the upstream repo)
-├── LiftedSource/               Lifted source file(s) provided by CS 6335 Staff
+├── Picinae/                      Picinae is a git submodule (master branch of the upstream repo)
+├── LiftedSource/                 Lifted source file(s) provided by CS 6335 Staff
 │   └── atoi_lo_atoi_armv8.v
-├── Proofs/                     Correctness proof for atoi
-│   ├── Helpers/                Supporting helper files for the main proof
-│   │   ├── BitWidth.v          Helpers relating to determining the bit width of an integer
-│   │   ├── Digits.v            Helpers relating to character to digit manipulation
-│   │   ├── Invariants.v        Helpers defining and working with invariants
-│   │   ├── Sign.v              Helpers relating to sign detection
-│   │   ├── Specification.v     Defines the "trusted" specification of atoi 
-│   │   └── Whitespace.v        Helpers relating to leading whitespace character detection
-│   └── Main_Proof.v            Main proof file
-├── _CoqProject                 Coq project configuration
+├── Proofs/                       Correctness proof for atoi
+│   ├── Helpers/                  Supporting helper files for the main proof
+│   │   ├── BitWidth.v            Helpers relating to determining the bit width of an integer
+│   │   ├── Digits.v              Helpers relating to character to digit manipulation
+│   │   ├── Invariants.v          Helpers defining and working with invariants
+│   │   ├── MainProofHelpers.v    Supporting lemmas and tactics for the main proof
+│   │   ├── Sign.v                Helpers relating to sign detection
+│   │   ├── Specification.v       Defines the "trusted" specification of atoi 
+│   │   ├── SpecificationProof.v  Proofs of properties about the specification
+│   │   └── Whitespace.v          Helpers relating to leading whitespace character detection
+│   └── Main_Proof.v              Main proof file
+├── _CoqProject                   Coq project configuration
 ├── clean.bat
 ├── first_time_setup.bat
 └── windows_build.bat

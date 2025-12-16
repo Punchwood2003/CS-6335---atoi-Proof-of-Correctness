@@ -1,19 +1,21 @@
 (* Complete atoi specification in Gallina
    This is the trusted implementation that defines what atoi should do *)
 
-Require Import Picinae_armv8_pcode.
-Require Import NArith.
+   (* Import standard libraries *)
 Require Import ZArith.
 Require Import Lia.
+
+(* Import local helpers *)
 Require Import Whitespace.
 Require Import Sign.
 Require Import Digits.
-Require Import BitWidth.
+
+(* Import Picinae notations/tactics *)
+Require Import Picinae_armv8_pcode.
 Import ARM8Notations.
 
-Open Scope N.
-
 Open Scope Z.
+
 Definition atoi (mem:memory) (p:addr) (w:nat) (d:nat) :=
   let p_whitespace := handle_whitespace mem p w in
   let p_start := handle_sign_space mem p_whitespace in

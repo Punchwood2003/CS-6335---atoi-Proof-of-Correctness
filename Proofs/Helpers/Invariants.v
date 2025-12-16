@@ -1,15 +1,16 @@
 (* Loop invariants for the binary atoi implementation *)
 
-Require Import Picinae_armv8_pcode.
+(* Import standard libraries *)
 Require Import Utf8.
-Require Import NArith.
 Require Import ZArith.
 Require Import Lia.
+
+(* Import local helpers *)
 Require Import Whitespace.
-Require Import Sign.
 Require Import Digits.
-Require Import BitWidth.
-Require Import Specification.
+
+(* Import Picinae notations/tactics *)
+Require Import Picinae_armv8_pcode.
 Import ARM8Notations.
 
 Open Scope N.
