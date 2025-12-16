@@ -445,7 +445,8 @@
 % and "HIS" in caps to complete the first word.
 \IEEEPARstart{W}{e} have been working on proving the formal correctness of the \textbf{atoi} function using Picinae on the ARMv8 architecture. This will help to advance the state-of-the-art and improve the Picinae system.
 \section{Overview of atoi} \label{overview_atoi}
-The \textbf{atoi} function takes a given input string, and converts the "initial portion" of it into a corresponding 32-bit integer. The initial portion of a string starts from the beginning of the string and ends after the first numeric sequence in the string. Save for a "+" or "-" to indicate the sign of the numeric sequence in the string, only white space can intervene between the beginning of the string and the first numeric sequence in order to produce a "valid" output. If this rule is violated, we call the input "ill-formed", and \textbf{atoi} will return \textbf{0}. Figure 1 shows a control flow graph for the disassembly of \textbf{atoi}.
+The \textbf{atoi} function takes a given input string, and converts the "initial portion" of it into a corresponding 32-bit integer.It does this by converting each numeric ASCII character into it's associated numeric value one character at a time, and adds each converted value up to produce the final number. The initial portion of a string starts from the beginning of the string and ends after the first numeric sequence in the string. 
+At the start of the numeric sequence, a single "+" or "-" will determine the sign of the number output by \textbf{atoi} (providing neither will cause \textbf{atoi} to treat it as a positive number). Excepting the sign, the only characters allowed between the start of the string and the start of the numeric sequence in the initial portion is whitespace, which is discarded when \textbf{atoi} is processing the number. If this rule is violated, for example by having an alphabetic character occur before the first numeric sequence, we call the input "ill-formed", and \textbf{atoi} will return \textbf{0}. Figure 1 shows a control flow graph for the disassembly of \textbf{atoi}.
 \begin{figure*}[t]
 	\centering
 	\captionsetup{justification=centering,singlelinecheck=true,font=small}
@@ -453,27 +454,58 @@ The \textbf{atoi} function takes a given input string, and converts the "initial
 	\caption{atoi CFG}
 \end{figure*}
 
-\section{Implementation Strategy} \label{implementation}
-TODO
-
 \section{Challenges} \label{challenges}
-Throughout the course of our work on this project, we encountered a few challenges that made proving the correctness of \textbf{atoi} more complicated than originally anticipated. TODO
+Throughout the course of our work on this project, we encountered a few challenges that made proving the correctness of \textbf{atoi} more complicated than originally anticipated. Here we detail these challenges.
+\subsection{Overflow/Underflow}
+One of the first problems we ran into was how to handle integer overflow or underflow scenarios. If a string representing a number which is greater (or less) than what can be held in a 32-bit signed integer is used as the input to \textbf{atoi}, it could overflow or underflow and produce a value that doesn't properly correspond to the input string. \textbf{atoi} explicitly does not detect overflow or underflow errors, and will \textit{not} return \textbf{0} in the case of such an error.
+\par
+An intuitive solution would be to convert the string to it's integer representation and then check to see if the result had over/underflowed during the conversion by \textbf{atoi}. This would allow us to anticipate an over/underflow and adjust the expected result so that such behavior can be verified. While neat and intuitive, this would require re-solving this exact problem in the implementation of \textbf{atoi} we use to convert the string to an integer in order to check for over/underflow, which would mean verifying the correctness of two different \textbf{atoi} implementations.
+\par
+A different approach that we thought about would involve using a regular expression on the string to verify that the numeric sequence within it would not result in an over/underflow. The principle idea is guided by knowing the bounds of a 32-bit signed integer, $-2^{31}$ (-2,147,483,648) on the low end, and $2^{31}-1$ (2,147,483,647) on the high end. Since we know what these bounds look like, we can craft a regular expression to detect numbers that are higher or lower than these bounds, in order to anticipate an over/underflowed result. 
+\par
+Unfortunately, this solution has it's own complications. Since we know the bounds, we know that any number with anywhere in between zero and nine digits will not over/underflow. Input numbers with ten or more digits are where this solution starts to get tricky. A number with ten or more digits could be a full number that will over/underflow, but could also be a small number with many leading zeros, which would not overflow. A solution based on regular expression detection would need to account for these details, and be able to handle cases with a higher precision than just the number of digits (for example, "2147483647" would not result in an overflow, but "214748364\textbf{8}" would).
+\subsection{"Proper" vs. "Improper" Inputs}
+Similar to the over/underflow issue is that of a "proper" input, or one that will not result in an error. While over/underflowing inputs result in undesired behavior, they are not detected by \textbf{atoi} as errors. Handling "ill-formed" strings that are detected as errors by \textbf{atoi} has also proven to be a challenge itself. The \textbf{atoi} function returns \textbf{0} when it detects such an erroneous string. Unfortunately, \textbf{0} can also be returned by valid conversions from strings with a numeric sequence equivalent to zero, which means that given an arbitrary string, there is no way to tell if it is an "improper" input based on the output from \textbf{atoi} alone, which makes proving any property about the correctness of the input very difficult. We worked on trying to solve this issue for a while, but due to time constraints we eventually decided to compromise. The solution we ultimately settled on for this problem is to narrow the scope of our proof to only prove properties about the behavior of \textbf{atoi} on proper inputs, leaving validation of the input as a responsibility of the caller.
+
+\section{Implementation Strategy} \label{implementation}
+\subsection{Major theorems}
+\subsection{Preconditions}
 
 \section{Breakdown of Contributions} \label{contributions}
+\subsection{Matthew Sheldon}
 \begin{itemize}
-	\item Matthew Sheldon TODO
-	\item Isabella Pereira TODO
-	\item Jarrod Rogers helped with organizing the project and wrote the majority of this report.
-	\item Naja-Lee Habboush TODO
-	\item Brandon Wang made the control flow graph (Figure 1) and TODO
+	\item TODO
 \end{itemize}
 
+\subsection{Isabella Pereira}
+\begin{itemize}
+	\item TODO
+\end{itemize}
+
+\subsection{Jarrod Rogers}
+\begin{itemize}
+	\item TODO
+\end{itemize}
+
+\subsection{Naja-lee Habboush}
+\begin{itemize}
+	\item TODO
+\end{itemize}
+
+\subsection{Brandon Wang}
+\begin{itemize}
+	\item TODO
+\end{itemize}
 
 \section{Future Work} \label{future_work}
-TODO
+\begin{itemize}
+	\item TODO
+\end{itemize}
+
+\section{Evaluation}\label{evaluation}
 
 \section{Conclusion} \label{conclusion}
-As a team we have learned a lot from working on the correctness for \textbf{atoi}. iEven though there is still more work to be done, we are proud of what we have accomplished and the work we have contributed towards advancing the state-of-the-art.
+As a team we have learned a lot from working on the correctness for \textbf{atoi}. Even though there is still more work to be done, we are proud of what we have accomplished and the work we have contributed towards advancing the state-of-the-art.
 
 % An example of a floating figure using the graphicx package.
 % Note that \label must occur AFTER (or within) \caption.
