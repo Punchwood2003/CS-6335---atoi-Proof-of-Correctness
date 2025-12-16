@@ -127,6 +127,103 @@ Proof.
     right; symmetry; assumption.
 Qed.
 
+
+(* For bytes in whitespace range [9, 13) (excluding 13), msub 32 byte 9 < 4 *)
+Lemma whitespace_msub_bound :
+  forall n,
+    n < 256 ->
+    9 <= n < 13 ->
+    msub 32 n 9 < 4.
+Proof.
+  intros n Hbyte [Hge Hlt].
+  unfold msub.
+  (* Simplify 9 mod 2^32 = 9 *)
+  rewrite (N.mod_small 9 (2^32)) by (compute; trivial).
+  (* Since 9 <= n < 256, we have n + (2^32 - 9) = (n - 9) + 2^32 *)
+  assert (Hrewrite: n + (2^32 - 9) = (n - 9) + 2^32) by lia.
+  rewrite Hrewrite.
+  (* Simplify the modulo *)
+  rewrite N.Div0.add_mod by lia.
+  rewrite N.Div0.mod_same by lia.
+  rewrite N.add_0_r.
+  rewrite N.Div0.mod_mod by lia.
+  (* Since n < 256, we have n - 9 < 247 < 2^32 *)
+  rewrite (N.mod_small (n - 9) (2^32)) by lia.
+  (* Now we have n - 9 < 4 since n < 13 *)
+  lia.
+Qed.
+
+(* Converse: if msub 32 byte 9 < 4 for a byte, then byte is in [9, 13) *)
+Lemma msub_lt_4_whitespace :
+  forall n,
+    n < 256 ->
+    msub 32 n 9 < 4 ->
+    9 <= n < 13.
+Proof.
+  intros n Hbyte Hmsub.
+  unfold msub in Hmsub.
+  rewrite (N.mod_small 9 (2^32)) in Hmsub by (compute; trivial).
+  
+  destruct (N.lt_ge_cases n 9) as [Hlt9|Hge9].
+  - (* n < 9: derive contradiction *)
+    (* When n < 9, n + (2^32 - 9) is large, close to 2^32 *)
+    assert (Hsum_lt: n + (2^32 - 9) < 2^32) by lia.
+    rewrite (N.mod_small (n + (2^32 - 9)) (2^32)) in Hmsub by lia.
+    (* So we have 2^32 - 9 + n < 4 *)
+    assert (Hcontra: 2^32 - 9 + n >= 2^32 - 9) by lia.
+    assert (Hlarge: 2^32 - 9 > 4) by (compute; trivial).
+    lia.
+  - (* n >= 9: normal case *)
+    assert (Hrewrite: n + (2^32 - 9) = (n - 9) + 2^32) by lia.
+    rewrite Hrewrite in Hmsub.
+    rewrite N.Div0.add_mod in Hmsub by lia.
+    rewrite N.Div0.mod_same in Hmsub by lia.
+    rewrite N.add_0_r in Hmsub.
+    rewrite N.Div0.mod_mod in Hmsub by lia.
+    assert (Hsmall: n - 9 < 2^32).
+    { assert (H: 247 < 2^32) by (compute; trivial). lia. }
+    rewrite (N.mod_small (n - 9) (2^32)) in Hmsub by lia.
+    (* Now Hmsub: n - 9 < 4, so n < 13 *)
+    split; lia.
+Qed.
+
+(* Helper lemma: If the bitwise OR of two conditions is positive,
+    and we know the second condition is false, then the first must be true.
+    Specialized for the whitespace BC0 condition structure. *)
+Lemma whitespace_bc0_implies_msub :
+  forall (byte : N) (bc0_val : N),
+    (* BC0 structure: (if 4 <=? msub 32 byte 9 then 0 else 1) .| (if byte =? 13 then 1 else 0) *)
+    bc0_val = (if 4 <=? msub 32 byte 9 then 0 else 1) .| (if byte =? 13 then 1 else 0) ->
+    (* BC0 is positive *)
+    (exists p_pos, bc0_val = N.pos p_pos) ->
+    (* byte is not 13 *)
+    byte ≠ 13 ->
+    (* Then msub 32 byte 9 < 4 *)
+    msub 32 byte 9 < 4.
+Proof.
+  intros byte bc0_val Hbc0 Hpos Hneq.
+  destruct (N.ltb_spec (msub 32 byte 9) 4) as [Hlt|Hge].
+  - (* Already have msub < 4 *)
+    assumption.
+  - (* Derive contradiction: if msub >= 4, then BC0 = 0 *)
+    exfalso.
+    destruct Hpos as [p_pos Hpos].
+    rewrite Hpos in Hbc0.
+    (* If msub >= 4, first part is 0 *)
+    assert (Hleb: (4 <=? msub 32 byte 9) = true) by (apply N.leb_le; assumption).
+    (* If byte ≠ 13, second part is 0 *)
+    assert (Heqb: (byte =? 13) = false) by (apply N.eqb_neq; assumption).
+    (* Substitute both *)
+    rewrite Hleb, Heqb in Hbc0.
+    (* Now we have N.pos p_pos = 0 .| 0 = 0, contradiction *)
+    simpl in Hbc0. discriminate Hbc0.
+Qed.
+
+Ltac ignore_vars v ::= constr:(match v with
+  | R_TMPOV | R_TMPNG | R_TMPZR => true
+  | _ => false
+end).
+
 Ltac digit_start_persists DSTART := 
   unfold digit_start in *; destruct DSTART as (WS & SIGN); split;
     try assumption;
@@ -170,10 +267,68 @@ Proof.
   (* 1048580 -> 1048636 and 1048580 -> 1048600 *)
   destruct PRE as (i & H0 & H1 & MEM). step. step. step. step.
     (* 1048580 -> 1048636: Prove that the current character is whitespace. *)
-    admit.
+    (* Case 1: Character is a space (32) *)
+    step. exists i. unfold inv_inside_whitespace_loop. repeat split.
+      (* all_whitespace_until i is preserved *)
+      assumption.
+      (* The current character at position i is whitespace (it's a space) *)
+      unfold is_whitespace. right. apply Neqb_ok in BC. psimpl. exact BC.
+      (* R_X0 = mem Ⓑ[p ⊕ i] *)
+      psimpl. reflexivity.
+    (* Case 2: Character is NOT a space (32), but is in range [9, 13] *)
+    step. exists i. unfold inv_after_whitespace. repeat split.
+      (*Case where all whitespace has been processed *)
+      exact H0.
+      (* The current character is not whitespace *)
+      unfold is_whitespace. unfold "~". intros [H|H].
+      (* Case: 9 <= byte <= 13 *)
+        apply zero_lor_zero in BC0. destruct BC0 as (BC1 & BC2).
+        apply trivial_if in BC1. apply trivial_if_false in BC2.
+        2: unfold "~"; intros; discriminate.
+        destruct H as (GE9 & LE13).
+        apply N.leb_le in BC1. apply N.eqb_neq in BC2.
+        (* BC1 says: 4 <= msub 32 byte 9 *)
+        (* But for byte in [9, 13), we have msub 32 byte 9 < 4 *)
+        psimpl in GE9. psimpl in LE13.
+        assert (Hbound: mem Ⓑ[ p + i ] < 13) by lia.
+        assert (Hbyte: mem Ⓑ[ p + i ] < 256) by apply mem_byte_bound.
+        assert (Hmsub: msub 32 (mem Ⓑ[ p + i ]) 9 < 4) by (apply whitespace_msub_bound; lia).
+        lia.
+      (* Case: byte = 32 *)
+      apply N.eqb_neq in BC. psimpl in H. apply BC. exact H.
+      psimpl. reflexivity.
     (* 1048580 -> 1048600: Prove that the current character is NOT whitespace, 
     and that there exists j whitespace bytes *)
-    admit.
+    (* Case 3: BC = false, BC0 = positive (byte IS whitespace, stays in loop) *)
+    intros. exists i. unfold inv_inside_whitespace_loop. repeat split.
+      (* all_whitespace_until i is preserved *)
+      assumption.
+      (* The current character at position i is whitespace *)
+      unfold is_whitespace. left.
+      (* BC0 positive means (msub 32 byte 9 < 4) OR (byte = 13) *)
+      (* We prove 9 <= byte <= 13 by case analysis on whether byte = 13 *)
+      apply N.eqb_neq in BC.
+      assert (Hbyte: mem Ⓑ[ p ⊕ i ] < 256) by apply mem_byte_bound.
+      destruct (N.eqb_spec (mem Ⓑ[ p ⊕ i ]) 13) as [Heq13|Hne13].
+        (* Subcase: byte = 13 (carriage return) *)
+        rewrite Heq13. split; lia.
+        (* Subcase: byte ≠ 13, so msub condition must hold *)
+        (* Apply whitespace_bc0_implies_msub, which works with BC0's structure *)
+        psimpl in BC0. psimpl in Hne13.
+        assert (Hmsub_raw: msub 32 (mem Ⓑ[ p + i ]) 9 < 4).
+        { apply whitespace_bc0_implies_msub with (bc0_val := (if 4 <=? msub 32 (mem Ⓑ[ p + i ]) 9 then 0 else 1) .| (if mem Ⓑ[ p + i ] =? 13 then 1 else 0)).
+          - reflexivity.
+          - exists p0. exact BC0.
+          - exact Hne13. }
+        (* Apply msub_lt_4_whitespace to get range, keeping goal notation *)
+        assert (Hrange: 9 <= mem Ⓑ[ p ⊕ i ] < 13).
+        { apply msub_lt_4_whitespace; [apply mem_byte_bound | psimpl; exact Hmsub_raw]. }
+        (* Extend < 13 to <= 13 *)
+        destruct Hrange as [H_ge9 H_lt13]. split.
+          exact H_ge9.
+          apply N.lt_le_incl. exact H_lt13.
+      (* R_X0, R_X1, V_MEM64 trivial by psimpl *)
+      psimpl. reflexivity.
 
   (* 1048600 -> 1048620 and 1048600 -> 1048624 *)
   unfold inv_after_whitespace, first_nonwhitespace, all_whitespace_until in PRE.

@@ -301,7 +301,6 @@ Section Invariants.
   Definition inv_postcondition (i j k : N) (s : store) : Prop :=
     digit_start i j s /\ (* The digits should start at index j *)
     all_digits j k /\ (* There are j-k digits from mem[p+j] to mem[p+j+k-1] *)
-    (* TODO: Use self-specified atoi to check result *)
     s V_MEM64 = mem.
 
   (* Unified invariant set at each checkpoint *)
