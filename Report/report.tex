@@ -486,7 +486,11 @@ In order to streamline work and organize code, we broke the formal proof into th
 	\item \texttt{whitespace\_handler\_correct}: The proof that the whitespace handler within the Gallina implementation of \texttt{atoi} properly handles leading whitespace.
 \end{itemize}
 
-\subsection{Preconditions}
+\subsection{Post conditions}
+\begin{itemize}
+	\item \texttt{digit\_start}: Tells us at which index the input string digits begin.
+	\item \texttt{all\_digits}: Tells us there are \texttt{k} valid, consecutive digits in the input string.
+\end{itemize}
 
 \section{Breakdown of Contributions} \label{contributions}
 Many responsibilities were shared by everyone in the team. These include:
