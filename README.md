@@ -38,7 +38,13 @@ The layout and build scripts of this project assumes that...
 ├── LiftedSource/               Lifted source file(s) provided by CS 6335 Staff
 │   └── atoi_lo_atoi_armv8.v
 ├── Proofs/                     Correctness proof for atoi
-│   ├── Lemmas/                 Supporting lemmas
+│   ├── Helpers/                Supporting helper files for the main proof
+│   │   ├── BitWidth.v          Helpers relating to determining the bit width of an integer
+│   │   ├── Digits.v            Helpers relating to character to digit manipulation
+│   │   ├── Invariants.v        Helpers defining and working with invariants
+│   │   ├── Sign.v              Helpers relating to sign detection
+│   │   ├── Specification.v     Defines the "trusted" specification of atoi 
+│   │   └── Whitespace.v        Helpers relating to leading whitespace character detection
 │   └── Main_Proof.v            Main proof file
 ├── _CoqProject                 Coq project configuration
 ├── clean.bat
@@ -48,9 +54,9 @@ The layout and build scripts of this project assumes that...
 
 ## Notes
 - All `.v` files in `LiftedSource/` and `Proofs/` are automatically discovered and compiled
-- To add new lemmas, simply create `.v` files in `Proofs/Lemmas/` (no config updates needed)
+- To add new helpers, simply create `.v` files in `Proofs/Helpers/`. Then update the `_CoqProject` file and the `windows_build.bat` script to include the new files.
 - To clean Picinae separately, run `cd Picinae` then `.\clean.bat` (Picinae contains its own clean script).
-- If you are having an issue with the source files not properly recognizing the imports, reload your VSCode or IDE window. For VSCode, you can do this by pressing `Ctrl+Shift+P` and then typing `Reload Window`.
+- If you are having an issue with the source files not properly recognizing the imports, reload your VSCode or IDE window. For VSCode, you can do this by pressing `Ctrl+Shift+P` and then typing `Developer: Reload Window`.
 
 ## Acknowledgements
 The project was completed, in whole, by "the authors": Matthew Sheldon, Isabella Pereira, Jarrod Rogers, Naja-Lee Habboush, and Brandon Wang. This includes all proof source code as well as the build scripts. The project was completed as part of the "Language-Based Security" course at the University of Texas at Dallas, taught by Dr. Kevin Hamlen during the Fall 2025 semester.
