@@ -1,11 +1,14 @@
+(* Import standard libraries *)
 Require Import ZArith.
 Require Import Lia.
 
+(* Import local helpers *)
 Require Import Whitespace.
 Require Import Sign.
 Require Import Digits.
 Require Import Specification.
 
+(* Import Picinae notations/tactics *)
 Require Import Picinae_armv8_pcode.
 Import ARM8Notations.
 
@@ -13,12 +16,12 @@ Import ARM8Notations.
 Close Scope Z.
 Theorem whitespace_handler_correct: 
 forall (mem:memory) (p:addr) (w:nat), 
-  p <= handle_whitespace mem p w <= p+(N.of_nat w). 
+  p <= handle_whitespace mem p w <= p + (N.of_nat w). 
   
 Proof. 
   intros. revert p. induction w.
     intros. simpl. rewrite N.add_0_r. split; apply N.le_refl.
-    intros. simpl. specialize (IHw (p+1)). split; lia.
+    intros. simpl. specialize (IHw (p + 1)). split; lia.
 Qed.
 
 (* === prove that sign handling works === *) 
@@ -43,7 +46,7 @@ Theorem sign_point_has_sign:
   forall (mem:memory) (p:addr),
     (Z.of_N (mem Ⓑ[ p ]) = Z.of_N 43) \/
     (Z.of_N (mem Ⓑ[ p ]) = Z.of_N 45)
-    -> handle_sign_space mem p = p+1.
+    -> handle_sign_space mem p = p + 1.
 Proof.
   intros. unfold handle_sign_space.
   set (x := Z.of_N (mem Ⓑ[p])).

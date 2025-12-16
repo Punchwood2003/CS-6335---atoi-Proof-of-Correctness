@@ -1,10 +1,12 @@
 (* Whitespace detection and skipping logic for atoi *)
 
-Require Import Picinae_armv8_pcode.
+(* Import standard libraries *)
 Require Import Utf8.
 Require Import NArith.
-Require Import ZArith.
 Require Import Lia.
+
+(* Import Picinae notations/tactics *)
+Require Import Picinae_armv8_pcode.
 Import ARM8Notations.
 
 Open Scope N.
