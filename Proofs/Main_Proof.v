@@ -432,4 +432,4 @@ Proof.
     unfold inv_postcondition. 
       split; try assumption.
       split; assumption.
-Admitted.
+Qed.
