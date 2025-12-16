@@ -8,9 +8,22 @@ Picinae/Picinae_simplifier_base.v
 Picinae/Picinae_simplifier_v1_1.v
 Picinae/Picinae_ISA.v
 Picinae/Picinae_armv8_pcode.v
-# Lifted Srouce file(s)
+
+# Lifted Source file(s)
 -R LiftedSource atoiProof
-LiftedSource
-# Proofs
+LiftedSource/atoi_lo_atoi_armv8.v
+
+# Helpers (in dependency order)
+-R Proofs/Helpers atoiProof.Helpers
+Proofs/Helpers/Whitespace.v
+Proofs/Helpers/Digits.v
+Proofs/Helpers/Sign.v
+Proofs/Helpers/BitWidth.v
+Proofs/Helpers/Specification.v
+Proofs/Helpers/Invariants.v
+Proofs/Helpers/MainProofHelpers.v
+Proofs/Helpers/SpecificationProof.v
+
+# Main Proof
 -R Proofs atoiProof
-Proofs
+Proofs/Main_Proof.v
