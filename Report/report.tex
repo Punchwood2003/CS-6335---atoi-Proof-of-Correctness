@@ -551,7 +551,7 @@ Here are some of the things we are proud of achieving:
 While were unable to complete this project in the allotted time, we got very close. Here is what is still missing, which is further discussed in the next section:
 \begin{itemize}
 	\item We did not finish the implementation of our invariants.
-	\item We were unable to complete our self-specified implementation of \texttt{atoi}
+	\item We were unable to complete our post-conditions
 \end{itemize}
 
 \section{Future Work} \label{future_work}
@@ -559,7 +559,7 @@ The current state of the project is not where we had intended for it to be at th
 \par
 The first of these tasks is the final invariant task. While we have completed the first two of three invariant-related tasks, we unfortunately ran out of time to finish the last one. In addition to the maintenance of the digit start index and counting the number of digits (as the invariants currently do), the digit loop invariants must also track the contents of register \texttt{w0} in relation to the digits that have been parsed. To do this, the \texttt{acc} parameter must be introduced to the digit loop invariants that don't already have it to denote the number of digits that have been parsed so far, and register \texttt{w0} must be recorded to contain some symbolic value equal to the sum (or more accurately, difference, as \texttt{w0} is subtracted from instead of added onto) of the digit values of all digit characters parsed so far, accounting for place value. For example, if the digit start index is \texttt{j} and we have parsed \texttt{acc}=3 digits, \texttt{w0} should contain a value equivalent to \texttt{$-digit\_value(mem[p+j+0])*10^{2} - digit\_value(mem[p+j+1])*10^{1} - digit\_value(mem[p+j+2])*10^{0}$}
 \par
-The second of the remaining tasks is completing our self-specification of \texttt{atoi} and comparing its result to \texttt{w0}'s symbolic value using the same input. Our specification of \texttt{atoi} currently takes as input a memory \texttt{mem}, string address \texttt{p}, index of digit start \texttt{j}, and total number of digits \texttt{k}, and then compute the symbolic atoi result of the number denoted by \texttt{mem[p+j]} to \texttt{mem[p+k-1]}. In the future, we would additionally want to compare those results with the contents of \texttt{w0} in the postcondition invariant (with an edge case of 0 digits being handled accordingly).
+The second of the remaining tasks is completing our self-specification of \texttt{atoi} and comparing its result to \texttt{w0}'s symbolic value using the same input. Our specification of \texttt{atoi} currently takes as input a memory \texttt{mem}, string address \texttt{p}, index of digit start \texttt{j}, and total number of digits \texttt{k}, and then computes the symbolic atoi result of the number denoted by \texttt{mem[p+j]} to \texttt{mem[p+k-1]}. In the future, we would additionally want to compare those results with the contents of \texttt{w0} in the postcondition invariant (with an edge case of 0 digits being handled accordingly).
 
 \section{Conclusion} \label{conclusion}
 As a team we have learned a lot from working on the correctness for \texttt{atoi}. Even though there is still more work to be done for a complete \texttt{atoi} partial proof of correctness, we are proud of what we have accomplished, the challenges that we were not only able to identify, but also begin to overcome, and the work we have contributed towards advancing the state-of-the-art.
