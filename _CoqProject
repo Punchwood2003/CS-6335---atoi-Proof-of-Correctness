@@ -21,6 +21,7 @@ Proofs/Helpers/Sign.v
 Proofs/Helpers/BitWidth.v
 Proofs/Helpers/Specification.v
 Proofs/Helpers/Invariants.v
+Proofs/Helpers/MainProofHelpers.v
 
 # Main Proof
 -R Proofs atoiProof
