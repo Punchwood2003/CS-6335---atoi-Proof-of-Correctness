@@ -26,6 +26,19 @@ if not exist "Picinae\Picinae_core.v" (
 echo Picinae submodule initialized successfully!
 
 echo.
+echo Copying updated Picinae files...
+if exist "UpdatedPicinaeFiles" (
+    xcopy /Y "%~dp0UpdatedPicinaeFiles\*.v" "%~dp0Picinae\"
+    if errorlevel 1 (
+        echo Warning: Could not copy some updated Picinae files
+    ) else (
+        echo Updated Picinae files copied successfully!
+    )
+) else (
+    echo No UpdatedPicinaeFiles directory found, skipping file copy.
+)
+
+echo.
 echo Building Picinae source files...
 cd /d "%~dp0\Picinae"
 call windows_build.bat

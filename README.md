@@ -14,6 +14,7 @@ The layout and build scripts of this project assumes that...
    .\first_time_setup.bat
    ```
    - Picinae is included as a git submodule. `first_time_setup.bat` runs `git submodule update --init --recursive` to fetch the submodule and then builds the Picinae sources.
+   - We require that an updated version of Picinae (not yet merged into master) is used due to a state explosion bug in the `step` tactic in the current version of Picinae. This script handles the process of copying the updated Picinae files into the project directory, and then building the Picinae source files.
    - The `windows_build.bat` script within Picinae assumes that you have installed Coq to the location `C:\Coq`. If you have installed Coq to a different location, you will need to modify the `windows_build.bat` script within the `Picinae` directory to point to your Coq installation location.
    - If your Coq installation is in a different location, then you will need to run `first_time_setup.bat` twice: once to clone Picinae, and then again to build Picinae (after you have modified the `windows_build.bat` script).
 
@@ -28,7 +29,8 @@ The layout and build scripts of this project assumes that...
    ```
 ## Setup & Build (Linux)
 
-1. Run make. The makefile supports build targets **all** and **clean**.
+1. Copy the updated Picinae files into the Picinae git submodule project directory.
+2. Run make. The makefile supports build targets **all** and **clean**.
 
 ## Project Structure
 ```
