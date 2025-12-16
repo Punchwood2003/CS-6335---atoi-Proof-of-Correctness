@@ -72,6 +72,13 @@ if errorlevel 1 (
     exit /b 1
 )
 
+echo   SpecificationProof.v...
+coqc -R Picinae Picinae -R Proofs/Helpers atoiProof.Helpers Proofs/Helpers/SpecificationProof.v
+if errorlevel 1 (
+    echo Error compiling SpecificationProof.v
+    exit /b 1
+)
+
 REM Compile main proof - include all paths with their namespaces
 echo Compiling Proofs/Main_Proof.v...
 coqc -R Picinae Picinae -R LiftedSource atoiProof -R Proofs/Helpers atoiProof.Helpers -R Proofs atoiProof Proofs/Main_Proof.v
