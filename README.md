@@ -37,6 +37,7 @@ The layout and build scripts of this project assumes that...
 ├── Picinae/                      Picinae is a git submodule (master branch of the upstream repo)
 ├── LiftedSource/                 Lifted source file(s) provided by CS 6335 Staff
 │   └── atoi_lo_atoi_armv8.v
+├── Report/                       All report-related artifacts
 ├── Proofs/                       Correctness proof for atoi
 │   ├── Helpers/                  Supporting helper files for the main proof
 │   │   ├── BitWidth.v            Helpers relating to determining the bit width of an integer

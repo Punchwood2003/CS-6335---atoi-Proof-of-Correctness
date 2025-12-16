@@ -1,0 +1,682 @@
+\documentclass[journal]{IEEEtran}
+
+% *** CITATION PACKAGES ***
+%%%%% Used for references/citations %%%%%
+\usepackage[hidelinks]{hyperref}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage{enumerate}
+
+% Define acmart-style author commands for IEEEtran compatibility
+\makeatletter
+% Storage for multiple authors
+\newcounter{authorcount}
+\setcounter{authorcount}{0}
+
+% Redefine \author to collect author information
+\let\old@author\author
+\renewcommand{\author}[1]{%
+  \stepcounter{authorcount}%
+  \expandafter\gdef\csname @authorname\Roman{authorcount}\endcsname{#1}%
+  \expandafter\gdef\csname @authoremail\Roman{authorcount}\endcsname{}%
+  \expandafter\gdef\csname @authorinst\Roman{authorcount}\endcsname{}%
+  \expandafter\gdef\csname @authorstreet\Roman{authorcount}\endcsname{}%
+  \expandafter\gdef\csname @authorcity\Roman{authorcount}\endcsname{}%
+  \expandafter\gdef\csname @authorstate\Roman{authorcount}\endcsname{}%
+  \expandafter\gdef\csname @authorcountry\Roman{authorcount}\endcsname{}%
+  \expandafter\gdef\csname @authorpostcode\Roman{authorcount}\endcsname{}%
+}
+
+\newcommand{\email}[1]{%
+  \expandafter\gdef\csname @authoremail\Roman{authorcount}\endcsname{#1}%
+}
+
+\newcommand{\affiliation}[1]{#1}
+
+\newcommand{\institution}[1]{%
+  \expandafter\gdef\csname @authorinst\Roman{authorcount}\endcsname{#1}%
+}
+
+\newcommand{\streetaddress}[1]{%
+  \expandafter\gdef\csname @authorstreet\Roman{authorcount}\endcsname{#1}%
+}
+
+\newcommand{\city}[1]{%
+  \expandafter\gdef\csname @authorcity\Roman{authorcount}\endcsname{#1}%
+}
+
+\newcommand{\state}[1]{%
+  \expandafter\gdef\csname @authorstate\Roman{authorcount}\endcsname{#1}%
+}
+
+\newcommand{\country}[1]{%
+  \expandafter\gdef\csname @authorcountry\Roman{authorcount}\endcsname{#1}%
+}
+
+\newcommand{\postcode}[1]{%
+  \expandafter\gdef\csname @authorpostcode\Roman{authorcount}\endcsname{#1}%
+}
+
+% Helper to add line if content is non-empty
+\newcommand{\@addlineifnonempty}[1]{%
+  \ifx\relax#1\relax\else
+    \if\relax\detokenize{#1}\relax\else
+      #1\\
+    \fi
+  \fi
+}
+
+% Redefine \maketitle to format authors in acmart style
+\let\old@maketitle\maketitle
+\renewcommand{\maketitle}{%
+  % Build author block
+  \def\@authorblock{}%
+  \newcounter{@authloop}%
+  \setcounter{@authloop}{1}%
+  \loop\ifnum\value{@authloop}>\value{authorcount}\else
+    % Build individual author entry
+    \begingroup
+    \edef\@authname{\csname @authorname\Roman{@authloop}\endcsname}%
+    \edef\@authemail{\csname @authoremail\Roman{@authloop}\endcsname}%
+    \edef\@authinst{\csname @authorinst\Roman{@authloop}\endcsname}%
+    \edef\@authstreet{\csname @authorstreet\Roman{@authloop}\endcsname}%
+    \edef\@authcity{\csname @authorcity\Roman{@authloop}\endcsname}%
+    \edef\@authstate{\csname @authorstate\Roman{@authloop}\endcsname}%
+    \edef\@authcountry{\csname @authorcountry\Roman{@authloop}\endcsname}%
+    \edef\@authpost{\csname @authorpostcode\Roman{@authloop}\endcsname}%
+    \xdef\@tempauthorentry{%
+      \noexpand\begin{tabular}{@{}c@{}}%
+        \noexpand\textbf{\@authname}%
+        \ifx\@authemail\empty\else\noexpand\\\@authemail\fi%
+        \ifx\@authinst\empty\else\noexpand\\\@authinst\fi%
+        \ifx\@authcity\empty\else\noexpand\\\@authcity\fi\ifx\@authstate\empty\else, \@authstate \fi\ifx\@authcountry\empty\else, \@authcountry\fi%
+      \noexpand\end{tabular}%
+    }%
+    \endgroup
+    \expandafter\g@addto@macro\expandafter\@authorblock\expandafter{\@tempauthorentry}%
+    \stepcounter{@authloop}%
+    \ifnum\value{@authloop}>\value{authorcount}\else
+      \g@addto@macro\@authorblock{\hspace{2em}}%
+    \fi
+  \repeat
+  % Pass formatted authors to IEEEtran
+  \expandafter\old@author\expandafter{\@authorblock}%
+  \old@maketitle
+}
+\makeatother
+
+
+% *** GRAPHICS RELATED PACKAGES ***
+%
+\ifCLASSINFOpdf
+  % \usepackage[pdftex]{graphicx}
+  % declare the path(s) where your graphic files are
+  % \graphicspath{{../pdf/}{../jpeg/}}
+  % and their extensions so you won't have to specify these with
+  % every instance of \includegraphics
+  % \DeclareGraphicsExtensions{.pdf,.jpeg,.png}
+\else
+  % or other class option (dvipsone, dvipdf, if not using dvips). graphicx
+  % will default to the driver specified in the system graphics.cfg if no
+  % driver is specified.
+  % \usepackage[dvips]{graphicx}
+  % declare the path(s) where your graphic files are
+  % \graphicspath{{../eps/}}
+  % and their extensions so you won't have to specify these with
+  % every instance of \includegraphics
+  % \DeclareGraphicsExtensions{.eps}
+\fi
+
+
+% *** MATH PACKAGES ***
+%
+\usepackage{amsmath, amssymb, mathtools}
+% A popular package from the American Mathematical Society that provides
+% many useful and powerful commands for dealing with mathematics.
+%
+% Note that the amsmath package sets \interdisplaylinepenalty to 10000
+% thus preventing page breaks from occurring within multiline equations. Use:
+%\interdisplaylinepenalty=2500
+% after loading amsmath to restore such page breaks as IEEEtran.cls normally
+% does. amsmath.sty is already installed on most LaTeX systems. The latest
+% version and documentation can be obtained at:
+% http://www.ctan.org/pkg/amsmath
+
+
+% *** SPECIALIZED LIST PACKAGES ***
+%
+% \usepackage{algorithmic}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{algorithm, algpseudocode, colonequals}
+\usepackage[noEnd=true,italicComments=true,rightComments=false,commentColor=ForestGreen,beginComment=//~,beginLComment=/*~,endLComment=~*/]{algpseudocodex}
+% algorithmic.sty was written by Peter Williams and Rogerio Brito.
+% This package provides an algorithmic environment fo describing algorithms.
+% You can use the algorithmic environment in-text or within a figure
+% environment to provide for a floating algorithm. Do NOT use the algorithm
+% floating environment provided by algorithm.sty (by the same authors) or
+% algorithm2e.sty (by Christophe Fiorio) as the IEEE does not use dedicated
+% algorithm float types and packages that provide these will not provide
+% correct IEEE style captions. The latest version and documentation of
+% algorithmic.sty can be obtained at:
+% http://www.ctan.org/pkg/algorithms
+% Also of interest may be the (relatively newer and more customizable)
+% algorithmicx.sty package by Szasz Janos:
+% http://www.ctan.org/pkg/algorithmicx
+
+
+% *** ALIGNMENT PACKAGES ***
+%
+% \usepackage{array}
+% Frank Mittelbach's and David Carlisle's array.sty patches and improves
+% the standard LaTeX2e array and tabular environments to provide better
+% appearance and additional user controls. As the default LaTeX2e table
+% generation code is lacking to the point of almost being broken with
+% respect to the quality of the end results, all users are strongly
+% advised to use an enhanced (at the very least that provided by array.sty)
+% set of table tools. array.sty is already installed on most systems. The
+% latest version and documentation can be obtained at:
+% http://www.ctan.org/pkg/array
+% 
+% IEEEtran contains the IEEEeqnarray family of commands that can be used to
+% generate multiline equations as well as matrices, tables, etc., of high
+% quality.
+
+
+% *** SUBFIGURE PACKAGES ***
+\ifCLASSOPTIONcompsoc
+ \usepackage[caption=false,font=normalsize,labelfont=sf,textfont=sf]{subfig}
+\else
+ %\usepackage[caption=false,font=footnotesize]{subfig}
+ \usepackage{caption}
+\fi
+% subfig.sty, written by Steven Douglas Cochran, is the modern replacement
+% for subfigure.sty, the latter of which is no longer maintained and is
+% incompatible with some LaTeX packages including fixltx2e. However,
+% subfig.sty requires and automatically loads Axel Sommerfeldt's caption.sty
+% which will override IEEEtran.cls' handling of captions and this will result
+% in non-IEEE style figure/table captions. To prevent this problem, be sure
+% and invoke subfig.sty's "caption=false" package option (available since
+% subfig.sty version 1.3, 2005/06/28) as this is will preserve IEEEtran.cls
+% handling of captions.
+% Note that the Computer Society format requires a larger sans serif font
+% than the serif footnote size font used in traditional IEEE formatting
+% and thus the need to invoke different subfig.sty package options depending
+% on whether compsoc mode has been enabled.
+%
+% The latest version and documentation of subfig.sty can be obtained at:
+% http://www.ctan.org/pkg/subfig
+
+
+% *** FLOAT PACKAGES ***
+%
+%\usepackage{fixltx2e}
+% fixltx2e, the successor to the earlier fix2col.sty, was written by
+% Frank Mittelbach and David Carlisle. This package corrects a few problems
+% in the LaTeX2e kernel, the most notable of which is that in current
+% LaTeX2e releases, the ordering of single and double column floats is not
+% guaranteed to be preserved. Thus, an unpatched LaTeX2e can allow a
+% single column figure to be placed prior to an earlier double column
+% figure.
+% Be aware that LaTeX2e kernels dated 2015 and later have fixltx2e.sty's
+% corrections already built into the system in which case a warning will
+% be issued if an attempt is made to load fixltx2e.sty as it is no longer
+% needed.
+% The latest version and documentation can be found at:
+% http://www.ctan.org/pkg/fixltx2e
+% \usepackage{subcaption}
+
+
+%\usepackage{stfloats}
+% stfloats.sty was written by Sigitas Tolusis. This package gives LaTeX2e
+% the ability to do double column floats at the bottom of the page as well
+% as the top. (e.g., "\begin{figure*}[!b]" is not normally possible in
+% LaTeX2e). It also provides a command:
+%\fnbelowfloat
+% to enable the placement of footnotes below bottom floats (the standard
+% LaTeX2e kernel puts them above bottom floats). This is an invasive package
+% which rewrites many portions of the LaTeX2e float routines. It may not work
+% with other packages that modify the LaTeX2e float routines. The latest
+% version and documentation can be obtained at:
+% http://www.ctan.org/pkg/stfloats
+% Do not use the stfloats baselinefloat ability as the IEEE does not allow
+% \baselineskip to stretch. Authors submitting work to the IEEE should note
+% that the IEEE rarely uses double column equations and that authors should try
+% to avoid such use. Do not be tempted to use the cuted.sty or midfloat.sty
+% packages (also by Sigitas Tolusis) as the IEEE does not format its papers in
+% such ways.
+% Do not attempt to use stfloats with fixltx2e as they are incompatible.
+% Instead, use Morten Hogholm'a dblfloatfix which combines the features
+% of both fixltx2e and stfloats:
+%
+% \usepackage{dblfloatfix}
+% The latest version can be found at:
+% http://www.ctan.org/pkg/dblfloatfix
+
+
+
+
+%\ifCLASSOPTIONcaptionsoff
+%  \usepackage[nomarkers]{endfloat}
+% \let\MYoriglatexcaption\caption
+% \renewcommand{\caption}[2][\relax]{\MYoriglatexcaption[#2]{#2}}
+%\fi
+% endfloat.sty was written by James Darrell McCauley, Jeff Goldberg and 
+% Axel Sommerfeldt. This package may be useful when used in conjunction with 
+% IEEEtran.cls'  captionsoff option. Some IEEE journals/societies require that
+% submissions have lists of figures/tables at the end of the paper and that
+% figures/tables without any captions are placed on a page by themselves at
+% the end of the document. If needed, the draftcls IEEEtran class option or
+% \CLASSINPUTbaselinestretch interface can be used to increase the line
+% spacing as well. Be sure and use the nomarkers option of endfloat to
+% prevent endfloat from "marking" where the figures would have been placed
+% in the text. The two hack lines of code above are a slight modification of
+% that suggested by in the endfloat docs (section 8.4.1) to ensure that
+% the full captions always appear in the list of figures/tables - even if
+% the user used the short optional argument of \caption[]{}.
+% IEEE papers do not typically make use of \caption[]'s optional argument,
+% so this should not be an issue. A similar trick can be used to disable
+% captions of packages such as subfig.sty that lack options to turn off
+% the subcaptions:
+% For subfig.sty:
+% \let\MYorigsubfloat\subfloat
+% \renewcommand{\subfloat}[2][\relax]{\MYorigsubfloat[]{#2}}
+% However, the above trick will not work if both optional arguments of
+% the \subfloat command are used. Furthermore, there needs to be a
+% description of each subfigure *somewhere* and endfloat does not add
+% subfigure captions to its list of figures. Thus, the best approach is to
+% avoid the use of subfigure captions (many IEEE journals avoid them anyway)
+% and instead reference/explain all the subfigures within the main caption.
+% The latest version of endfloat.sty and its documentation can obtained at:
+% http://www.ctan.org/pkg/endfloat
+%
+% The IEEEtran \ifCLASSOPTIONcaptionsoff conditional can also be used
+% later in the document, say, to conditionally put the References on a 
+% page by themselves.
+
+
+% *** PDF, URL AND HYPERLINK PACKAGES ***
+%
+\usepackage{url}
+% url.sty was written by Donald Arseneau. It provides better support for
+% handling and breaking URLs. url.sty is already installed on most LaTeX
+% systems. The latest version and documentation can be obtained at:
+% http://www.ctan.org/pkg/url
+% Basically, \url{my_url_here}.
+
+
+% correct bad hyphenation here
+\hyphenation{op-tical net-works semi-conduc-tor}
+
+\hypersetup{
+    pdfauthor={Matthew Sheldon, Isabella Pereira, Jarrod Rogers, Naja-Lee Habboush, and Brandon Wang},%
+    pdftitle={CS 6335.001 - Project Report - Team 2},%
+    pdfproducer={LaTeX},
+    pdfcreator={pdfLaTeX},
+    bookmarksnumbered = true,
+    bookmarksopen     = true,
+}
+
+\newcommand{\doubleC}{\mathbb{C}}
+\newcommand{\doubleR}{\mathbb{R}}
+\newcommand{\doubleQ}{\mathbb{Q}} 
+\newcommand{\doubleZ}{\mathbb{Z}}
+\newcommand{\doubleN}{\mathbb{N}}
+\newcommand{\doublep}{\mathbb{P}}
+\newcommand{\doubleE}{\mathbb{E}}
+\newcommand{\set}[1]{\left\{#1\right\}}
+\newcommand{\point}[1]{\left(#1\right)}
+\newcommand{\bfloor}[1]{\left\lfloor #1\right\rfloor}
+\newcommand{\bceil}[1]{\left\lceil #1\right\rceil}
+
+\newcommand{\fullref}[1]{\hyperref[#1]{\ref*{#1} -- \nameref*{#1}}}
+
+\begin{document}
+%
+% paper title
+% Titles are generally capitalized except for words such as a, an, and, as,
+% at, but, by, for, in, nor, of, on, or, the, to and up, which are usually
+% not capitalized unless they are the first or last word of the title.
+% Linebreaks \\ can be used within to get better formatting as desired.
+% Do not put math or special symbols in the title.
+\title{\texttt{atoi} Proof of Correctness Report -- Team 2}
+%
+%%
+%% The "author" command and its associated commands are used to define
+%% the authors and their affiliations.
+%% Of note is the shared affiliation of the first two authors, and the
+%% "authornote" and "authornotemark" commands
+%% used to denote shared contribution to the research.
+\author{Matthew Sheldon}
+\email{matthew.sheldon@utdallas.edu}
+
+\affiliation{%
+  \institution{The University of Texas at Dallas}
+  \streetaddress{800 W. Campbell Road}
+  \city{Richardson}
+  \state{Texas}
+  \country{USA}
+  \postcode{75080-3021}
+}
+
+\author{Isabella Pereira}
+\email{isabella.pereira@utdallas.edu}
+
+\affiliation{%
+  \institution{The University of Texas at Dallas}
+  \streetaddress{800 W. Campbell Road}
+  \city{Richardson}
+  \state{Texas}
+  \country{USA}
+  \postcode{75080-3021}
+}
+
+\author{Jarrod Rogers}
+\email{jarrod.rogers@utdallas.edu}
+
+\affiliation{%
+  \institution{The University of Texas at Dallas}
+  \streetaddress{800 W. Campbell Road}
+  \city{Richardson}
+  \state{Texas}
+  \country{USA}
+  \postcode{75080-3021}
+}
+
+\author{Naja-Lee Habboush}
+\email{naja-lee.habboush@utdallas.edu}
+
+\affiliation{%
+  \institution{The University of Texas at Dallas}
+  \streetaddress{800 W. Campbell Road}
+  \city{Richardson}
+  \state{Texas}
+  \country{USA}
+  \postcode{75080-3021}
+}
+
+\author{Brandon Wang}
+\email{brandon.wang4@utdallas.edu}
+
+\affiliation{%
+  \institution{The University of Texas at Dallas}
+  \streetaddress{800 W. Campbell Road}
+  \city{Richardson}
+  \state{Texas}
+  \country{USA}
+  \postcode{75080-3021}
+}
+
+% The paper headers
+\markboth{CS 6335.001, Language-Based Security, December~2025}%
+{Language-Based Security, UTD}
+
+% make the title area
+\maketitle
+
+% As a general rule, do not put math, special symbols or citations
+% in the abstract or keywords.
+%\begin{abstract}
+%TODO.
+%\end{abstract}
+
+% Note that keywords are not normally used for peerreview papers.
+%\begin{IEEEkeywords}
+%Language-Based Security, Proof of Correctness, TODO
+%\end{IEEEkeywords}
+
+
+\IEEEpeerreviewmaketitle
+
+
+\section{Introduction}
+% The very first letter is a 2 line initial drop letter followed
+% by the rest of the first word in caps.
+% 
+% form to use if the first word consists of a single letter:
+% \IEEEPARstart{A}{demo} file is ....
+% % form to use if you need the single drop letter followed by
+% normal text (unknown if ever used by the IEEE):
+% \IEEEPARstart{A}{}demo file is ....
+% 
+% Some journals put the first two words in caps:
+% \IEEEPARstart{T}{his demo} file is ....
+% 
+% Here we have the typical use of a "T" for an initial drop letter
+% and "HIS" in caps to complete the first word.
+\IEEEPARstart{W}{e} have been working on proving the formal correctness of the \texttt{atoi} function using Picinae on the ARMv8 architecture. The formal verification of \texttt{atoi} will allow us to prove exactly how \texttt{atoi} works for any given input, which provides the guarantee that it is free of bugs and works as expected at all times, which closes the possibility of a bug or undocumented feature in \texttt{atoi} being exploited by attackers. Since \texttt{atoi} and functions like it are widely used by modern software, an exhaustive proof of its behavior is also an important step to the formal verification of other software projects that rely on it. Even in other projects which don't use \texttt{atoi} directly, but rather a similar function like \texttt{atol}, the work we do to prove the correctness of \texttt{atoi} may lay the groundwork for proofs on similar functions. Since a proof of \texttt{atoi} on the ARMv8 computer architecture using the Picinae system has never been done before, our work on \texttt{atoi} will help to advance the state-of-the-art and improve the Picinae system.
+\section{Overview of atoi} \label{overview_atoi}
+The \texttt{atoi} (ASCII-to-integer) function takes, as input, a string, and converts the ``initial portion'' of said string into a corresponding 32-bit integer. It does this by converting each numeric ASCII character into its associated numeric value one character at a time, and adds each converted value up to produce the final number. 
+
+The initial portion of a string starts from the beginning of the string, consists of potentially leading whitespace, an optional sign character, zero or more numeric characters, and ends after the first non-numeric sequence in the string. At the start of the numeric sequence, a single ``\texttt{+}'' or ``\texttt{-}'' will determine the sign of the number output by \texttt{atoi} (providing neither will cause \texttt{atoi} to treat it as a positive number). Excepting the sign, the only characters allowed between the start of the string and the start of the numeric sequence in the initial portion is whitespace, which is discarded when \texttt{atoi} is processing the number. If this rule is violated, for example by having an alphabetic character occur before the first numeric sequence, we call the input ``ill-formed'', as \texttt{atoi} will return \texttt{0}. Figure \ref{fig:1} shows a control flow graph for the disassembly of \texttt{atoi}.
+\begin{figure*}[t]
+	\centering
+	\captionsetup{justification=centering,singlelinecheck=true,font=small}
+	\includegraphics[width=\linewidth]{atoi_CFG.jpg}
+	\caption{Control Flow Graph (CFG) for \texttt{atoi}}
+  \label{fig:1}
+\end{figure*}
+
+\section{Challenges} \label{challenges}
+Throughout the course of our work on this project, we encountered several challenges that made proving the correctness of \texttt{atoi} more complicated than originally anticipated. Here we detail these challenges.
+
+\subsection{Overflow/Underflow}
+One of the first problems we ran into was determining how to handle integer overflow or underflow scenarios. If the string representation of a number greater (or less) than what can be held in a 32-bit signed integer is used as input to \texttt{atoi}, it will result in an overflow/underflow and produce a value that doesn't properly correspond to the full input string. \texttt{atoi} explicitly does not detect overflow or underflow errors, and will \textit{not} return \texttt{0} in the case of such an error. We observed that our specific implementation of \texttt{atoi} will simply return the lower $32$-bits of what the $n$-bit representation of the number would have been. 
+\par
+Our initial approach involved using regular expressions on the string to verify that the numeric sequence within would not result in an over/underflow. The principle idea is guided by knowing the bounds of a 32-bit signed integer are static: $-2^{31}$ (-2,147,483,648) on the low end, and $2^{31}-1$ (2,147,483,647) on the high end. We also figured that since we had been working with regular expressions in the homework assignments leading up until this, we would likely be able to come up with something that worked with minimal effort. Because of this, we thought we could craft a regular expression to detect numbers that are outside these bounds in order to anticipate an over/underflowed result. However, as we quickly discovered, this approach was fundamentally flawed.
+\par
+Since the bounds are static, we knew that any number with between zero and nine digits will not over/underflow. Input numbers with ten or more digits, however, is where this solution starts to get tricky. A number with ten or more digits could be a full number that will over/underflow, but could also be a small number with many leading zeros, which would not overflow. A solution based on regular expression detection would need to account for these details, and be able to handle cases with a higher precision than just the number of digits (for example, ``\texttt{2147483647}'' would not result in an overflow, but ``\texttt{214748364\textbf{8}}'' would). For these reasons, we decided to abandon the regular expression approach and instead turn our attention elsewhere.
+\par
+A more intuitive solution is to, separate from the \texttt{atoi} implementation being validated, first convert the string to its integer representation and then check to see if the result over/underflowed during the conversion. This would allow us to detect an over/underflow and adjust the expected result so that such behavior can be verified. While neat and intuitive, we initially dismissed this approach as it would require re-solving the exact problem of implementing \texttt{atoi} and would mean verifying the correctness of two different \texttt{atoi} implementations. However, after some thought and discussion with the CS 6335 staff, we realized that this approach would be the most straightforward and efficient way to solve the problem. Namely, since the Gallina implementation of \texttt{atoi} would not be burdened with the bit-width restrictions of the ARMv8 architecture -- by making use of the built-in and structurally defined Integer definition -- it would be able to handle the full range of input values that we would need to test. Then, all that would be left is to determine how many bits of memory would be required to store the integer representation of the number. This would allow us to verify that the input to \texttt{atoi} would not result in an over/underflow during the conversion.
+
+\subsection{``Proper'' vs. ``Improper'' Inputs}
+Similar to the over/underflow issue is defining what a ``proper'' input to \texttt{atoi} looks like (i.e., an input that will not result in an error). While over/underflowing inputs result in undesired behavior, they are not detected by \texttt{atoi} as errors. Handling ``ill-formed'' strings that are detected as errors by \texttt{atoi} has also proven to be a challenge itself. The \texttt{atoi} function returns \texttt{0} when it detects such an erroneous string. Unfortunately, \texttt{0} can also be returned by valid conversions from strings with a numeric sequence equivalent to zero, which means that given an arbitrary string, there is no immediate way to tell if it is an ``improper'' input based on the output from \texttt{atoi} alone, which makes proving any property about the correctness of the input very difficult. We worked on trying to solve this issue for a while, but due to time constraints we eventually decided to compromise. The solution we ultimately settled on for this problem is to narrow the scope of our proof to only prove properties about the behavior of \texttt{atoi} on proper inputs, leaving validation of the input as a responsibility of the caller.
+
+\subsection{The State Explosion Problem}
+While working on the project, we observed some odd behavior while executing certain instructions. Anytime a \texttt{step} instruction was executed, especially on a \texttt{ccmp} operation, execution would take a very long time or bring execution somewhere outside of the expected execution path. In one instance, a \texttt{step} instruction executed for over \textbf{\textit{two hours}} and then crashed. After code optimization, we were able to get the execution time down to a more reasonable (yet still extremely slow) twenty or so seconds for some of these abnormal \texttt{step} instructions executed. Considering that we have twenty-two step instructions in our main proof, this was still an unacceptably slow speed. Even not considering unacceptable performance, we still had trouble with an executing \texttt{step} instruction going rogue and landing at a non-invariant, unsteppable goal. After hours of debugging, testing, and code revisions, we decided to reach out to the CS 6335 staff for assistance with the problem. They were able to figure out that the problem was caused by a bug in the Picinae system which was causing some \texttt{step} instructions to massively blow up the number of states produced, leading to significant portions of time spent pointlessly executing unneeded instructions and attempting to interpret said results. After discovering the bug, the CS 6335 staff provided a patch for Picinae that would let us continue our work. Unfortunately, accommodating this patch required refactoring most of the code relating to sections with \texttt{ccmp} instructions that we had written prior, which, when combined with the time lost trying to find the issue, resulted in losing many valuable work hours through the course of overcoming this challenge.
+
+\subsection{Universal Quantification vs. Existential Quantification}
+Perhaps the biggest challenge we faced throughout working on this project was an incorrect usage of universal qualifiers throughout the project. We went into the implementation phase of this project with the goal of thoroughly proving the behavior of \texttt{atoi} in all possible scenarios. This philosophy, noble as it was, was applied throughout the entire project, including nearly every invariant. In many places where an existential quantifier was the correct choice, we originally selected a universal quantifier, under the guise that doing so would make our proof more comprehensive. However, what we failed to realize at the time was that many of these improperly used universal quantifiers caused our claims to compound on other universal quantifiers in what we were attempting to prove for the different invariants -- hence, an existential quantifier at the top level was more appropriate. This became highly problematic because it multiplied our workload despite being unnecessary (or simply invalid in many cases) for many of our invariants to be exhaustively proven. Worse yet, since the state of many of our invariants relies on the state of invariants before them, fixing this mistake necessitated a refactor of the proofs to nearly every invariant we had written up to that point, which unfortunately consumed many valuable work hours.
+
+\section{Implementation Strategy} \label{implementation}
+In order to streamline work and organize code, we broke the formal proof into the following components:
+\subsection{Major theorems}
+\begin{itemize}
+	\item \texttt{atoi\_partial\_correctness}: Our primary proof of correctness for \texttt{atoi}, limited to scenarios featuring valid inputs, which we were successful in proving. A majority of our proof-related logic is concentrated here.
+	\item \texttt{bit\_count\_correctness}: The proof that the bit counter within the Gallina implementation of \texttt{atoi} is correct.
+	\item \texttt{whitespace\_handler\_correct}: The proof that the whitespace handler within the Gallina implementation of \texttt{atoi} properly handles leading whitespace.
+\end{itemize}
+
+\subsection{Post conditions}
+\begin{itemize}
+	\item \texttt{digit\_start}: Tells us at which index the input string digits begin.
+	\item \texttt{all\_digits}: Tells us there are \texttt{k} valid, consecutive digits in the input string.
+\end{itemize}
+
+\section{Breakdown of Contributions} \label{contributions}
+Many responsibilities were shared by everyone in the team. These include:
+\begin{itemize}
+	\item Reviewing pull requests.
+	\item Attending and contributing to team meetings.
+	\item Contributing to the presentation by brainstorming, working on the slideshow, or presenting.
+\end{itemize}
+
+The contributions made by individual members of our team are as follows (in no particular order):
+\subsection{Matthew Sheldon}
+\begin{itemize}
+	\item Set up repository and environment structure.
+	\item Developed early versions of proof invariants.
+	\item Developed helper lemmas to prove non-whitespace loop-related goals.
+	\item Proof of whitespace-related invariants.
+	\item Proofreading and small adjustments for the report.
+	\item Managed internal team proceedings and final deliverables.
+\end{itemize}
+
+\subsection{Isabella Pereira}
+\begin{itemize}
+	\item Helped the group plan after receiving guidance from Professor Hamlen.
+	\item Primary contributor to the bit counter and subsequent proof.
+\end{itemize}
+
+\subsection{Jarrod Rogers}
+\begin{itemize}
+	\item Primary contributor to the project report.
+	\item Assisted with managing the project structure.
+	\item Ensured that all work supported a Linux workflow in addition to Windows.
+\end{itemize}
+
+\subsection{Naja-lee Habboush}
+\begin{itemize}
+	\item Started the invariants section.
+	\item Defined the Gallina program of \texttt{atoi} in Coq.
+	\item Primary contributor to the proof for the Gallina implementation of \texttt{atoi}.
+\end{itemize}
+
+\subsection{Brandon Wang}
+\begin{itemize}
+	\item Conducted initial analysis of disassembled code. 
+	\item Creation of the \texttt{atoi} CFG (Figure \ref{fig:1}).
+	\item Refinement of invariants created by other members of the team.
+	\item Primary contributor to the proof of non-whitespace loop-related invariants.
+\end{itemize}
+
+\section{Evaluation}\label{evaluation}
+Looking at how far we were able to take our project, we were able to achieve many of the goals we had originally set out to fulfill. Although our work is incomplete, we are proud of what we accomplished given the time constraints, limited experience, and multitude of challenges we faced in both planning and implementing our formal verification of \texttt{atoi}. Some of the things we tried ended up not working, which is discussed in greater detail in \S \fullref{challenges}.
+\par
+Here are some of the things we are proud of achieving:
+\begin{itemize}
+	\item A full Gallina specification of \texttt{atoi}
+	\item A mostly-complete formal verification of \texttt{atoi} on valid inputs
+\end{itemize}
+\par
+While were unable to complete this project in the allotted time, we got very close. Here is what is still missing, which is further discussed in the next section:
+\begin{itemize}
+	\item We did not finish the implementation of our invariants.
+	\item We were unable to complete our post-conditions
+\end{itemize}
+
+\section{Future Work} \label{future_work}
+The current state of the project is not where we had intended for it to be at this point. It is the hope of the authors that future work will be able to complete what we were unable to within the time we had to work. Currently, two major tasks still need to be completed, which, we are confident would have been able to be completed within an additional week of work.
+\par
+The first of these tasks is the final invariant task. While we have completed the first two of three invariant-related tasks, we unfortunately ran out of time to finish the last one. In addition to the maintenance of the digit start index and counting the number of digits (as the invariants currently do), the digit loop invariants must also track the contents of register \texttt{w0} in relation to the digits that have been parsed. To do this, the \texttt{acc} parameter must be introduced to the digit loop invariants that don't already have it to denote the number of digits that have been parsed so far, and register \texttt{w0} must be recorded to contain some symbolic value equal to the sum (or more accurately, difference, as \texttt{w0} is subtracted from instead of added onto) of the digit values of all digit characters parsed so far, accounting for place value. For example, if the digit start index is \texttt{j} and we have parsed \texttt{acc}=3 digits, \texttt{w0} should contain a value equivalent to \texttt{$-digit\_value(mem[p+j+0])*10^{2} - digit\_value(mem[p+j+1])*10^{1} - digit\_value(mem[p+j+2])*10^{0}$}
+\par
+The second of the remaining tasks is completing our self-specification of \texttt{atoi} and comparing its result to \texttt{w0}'s symbolic value using the same input. Our specification of \texttt{atoi} currently takes as input a memory \texttt{mem}, string address \texttt{p}, index of digit start \texttt{j}, and total number of digits \texttt{k}, and then computes the symbolic atoi result of the number denoted by \texttt{mem[p+j]} to \texttt{mem[p+k-1]}. In the future, we would additionally want to compare those results with the contents of \texttt{w0} in the postcondition invariant (with an edge case of 0 digits being handled accordingly).
+
+\section{Conclusion} \label{conclusion}
+As a team we have learned a lot from working on the correctness for \texttt{atoi}. Even though there is still more work to be done for a complete \texttt{atoi} partial proof of correctness, we are proud of what we have accomplished, the challenges that we were not only able to identify, but also begin to overcome, and the work we have contributed towards advancing the state-of-the-art.
+
+% An example of a floating figure using the graphicx package.
+% Note that \label must occur AFTER (or within) \caption.
+% For figures, \caption should occur after the \includegraphics.
+% Note that IEEEtran v1.7 and later has special internal code that
+% is designed to preserve the operation of \label within \caption
+% even when the captionsoff option is in effect. However, because
+% of issues like this, it may be the safest practice to put all your
+% \label just after \caption rather than within \caption{}.
+%
+% Reminder: the "draftcls" or "draftclsnofoot", not "draft", class
+% option should be used if it is desired that the figures are to be
+% displayed while in draft mode.
+%
+%\begin{figure}[!t]
+%\centering
+%\includegraphics[width=2.5in]{myfigure}
+% where an .eps filename suffix will be assumed under latex, 
+% and a .pdf suffix will be assumed for pdflatex; or what has been declared
+% via \DeclareGraphicsExtensions.
+%\caption{Simulation results for the network.}
+%\label{fig_sim}
+%\end{figure}
+
+% Note that the IEEE typically puts floats only at the top, even when this
+% results in a large percentage of a column being occupied by floats.
+
+
+% An example of a double column floating figure using two subfigures.
+% (The subfig.sty package must be loaded for this to work.)
+% The subfigure \label commands are set within each subfloat command,
+% and the \label for the overall figure must come after \caption.
+% \hfil is used as a separator to get equal spacing.
+% Watch out that the combined width of all the subfigures on a 
+% line do not exceed the text width or a line break will occur.
+%
+%\begin{figure*}[!t]
+%\centering
+%\subfloat[Case I]{\includegraphics[width=2.5in]{box}%
+%\label{fig_first_case}}
+%\hfil
+%\subfloat[Case II]{\includegraphics[width=2.5in]{box}%
+%\label{fig_second_case}}
+%\caption{Simulation results for the network.}
+%\label{fig_sim}
+%\end{figure*}
+%
+% Note that often IEEE papers with subfigures do not employ subfigure
+% captions (using the optional argument to \subfloat[]), but instead will
+% reference/describe all of them (a), (b), etc., within the main caption.
+% Be aware that for subfig.sty to generate the (a), (b), etc., subfigure
+% labels, the optional argument to \subfloat must be present. If a
+% subcaption is not desired, just leave its contents blank,
+% e.g., \subfloat[].
+
+
+% An example of a floating table. Note that, for IEEE style tables, the
+% \caption command should come BEFORE the table and, given that table
+% captions serve much like titles, are usually capitalized except for words
+% such as a, an, and, as, at, but, by, for, in, nor, of, on, or, the, to
+% and up, which are usually not capitalized unless they are the first or
+% last word of the caption. Table text will default to \footnotesize as
+% the IEEE normally uses this smaller font for tables.
+% The \label must come after \caption as always.
+%
+%\begin{table}[!t]
+%% increase table row spacing, adjust to taste
+%\renewcommand{\arraystretch}{1.3}
+% if using array.sty, it might be a good idea to tweak the value of
+% \extrarowheight as needed to properly center the text within the cells
+%\caption{An Example of a Table}
+%\label{table_example}
+%\centering
+%% Some packages, such as MDW tools, offer better commands for making tables
+%% than the plain LaTeX2e tabular which is used here.
+%\begin{tabular}{|c||c|}
+%\hline
+%One & Two\\
+%\hline
+%Three & Four\\
+%\hline
+%\end{tabular}
+%\end{table}
+
+
+% Can use something like this to put references on a page
+% by themselves when using endfloat and the captionsoff option.
+\ifCLASSOPTIONcaptionsoff
+  \newpage
+\fi
+
+
+% trigger a \newpage just before the given reference
+% number - used to balance the columns on the last page
+% adjust value as needed - may need to be readjusted if
+% the document is modified later
+%\IEEEtriggeratref{8}
+% The "triggered" command can be changed if desired:
+%\IEEEtriggercmd{\enlargethispage{-5in}}
+
+% references section
+
+% can use a bibliography generated by BibTeX as a .bbl file
+% BibTeX documentation can be easily obtained at:
+% http://mirror.ctan.org/biblio/bibtex/contrib/doc/
+% The IEEEtran BibTeX style support page is at:
+% http://www.michaelshell.org/tex/ieeetran/bibtex/
+%\bibliographystyle{IEEEtran}
+% argument is your BibTeX string definitions and bibliography database(s)
+%\bibliography{IEEEabrv,../bib/paper}
+%
+% <OR> manually copy in the resultant .bbl file
+% set second argument of \begin to the number of references
+% (used to reserve space for the reference number labels box)
+%\printbibliography[heading=bibnumbered]
+
+\end{document}

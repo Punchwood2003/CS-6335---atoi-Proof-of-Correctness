@@ -22,3 +22,11 @@ Makefile.coq
 Makefile.coq.conf
 .Makefile.coq.d
 *.cache
+
+# Ignore LaTeX intermediate files
+*.aux
+*.log
+*.out
+*.fdb_latexmk
+*.fls
+*.gz
