@@ -35,19 +35,11 @@ Proof.
 Lemma z_of_n_log2_up_comm: 
   forall (n: N), Z.of_N (N.log2_up n) = Z.log2_up (Z.of_N n).
 Proof.
-  induction n.
-  - reflexivity.
-  - simpl. destruct (N.pos p) eqn:Hp.
-    + simpl. discriminate.
-    + unfold N.log2_up, Z.log2_up. 
-  admit.
-Admitted. (* Charles said to admit for the time being *)
-  
-Lemma z_to_n_to_pos: 
-  forall (p: positive), Z.of_N (N.pos p) = Z.pos(p).
-Proof.
-  reflexivity.
-Qed.
+  intros. 
+  destruct n eqn:Hn.
+  - simpl. reflexivity.
+  - simpl. unfold Z.of_N; unfold N.log2_up; unfold Z.log2_up. (*lia. *) admit. 
+Admitted. (*Charles said not to worry for the time being*)
 
 Lemma n_pos_succ_pos_comm: 
   forall (p : positive), N.pos (Pos.succ p) = N.succ (N.pos p).
@@ -56,13 +48,13 @@ Proof.
 Qed.
 
 Lemma z_pow2_log2_up:
-  forall (a: Z), (0 < a)%Z -> (2 ^ (Z.log2_up a))%Z = a.
+  forall (a: Z), 0 < a -> a <= 2 ^ (Z.log2_up a).
 Proof.
-  intros. induction a.
-  - discriminate.
-  - simpl. unfold Z.log2_up. simpl. admit.
-  - simpl. discriminate.
-Admitted.
+  intros.
+  apply Z.log2_up_le_pow2. 
+  lia.
+  lia.
+Qed.  
       
 (* forall signed integers z, bit_count will return an N s.t. -(2^N) <= z < 2^N *)
 Theorem bit_count_correctness: 
@@ -76,15 +68,18 @@ Proof.
     rewrite <- H. rewrite z_succ_of_n. rewrite Z.pred_succ.
     rewrite N.pred_succ. simpl. split.
     + lia.
-    + rewrite n_pos_succ_pos_comm. rewrite z_of_n_log2_up_comm. rewrite z_pow2_log2_up.
-      -- lia.
-      -- lia.
+    + rewrite n_pos_succ_pos_comm. rewrite z_of_n_log2_up_comm. 
+      assert (Z.of_N (N.succ (N.pos p)) <= 2 ^ (Z.log2_up (Z.of_N (N.succ (N.pos p))))).
+      { apply z_pow2_log2_up. lia. } 
+      assert (Z.pos p < Z.of_N (N.succ (N.pos p))).
+      { simpl.  lia. }
+      eapply Z.lt_le_trans. eauto. lia.
   (* NEGATIVE *)
   - simpl; unfold signed_range. intros. 
     rewrite <- H. rewrite z_succ_of_n. rewrite Z.pred_succ.
     rewrite N.pred_succ. simpl. split.
-    + rewrite z_of_n_log2_up_comm. simpl. rewrite z_pow2_log2_up.
-      -- lia.
-      -- lia.
+    + rewrite z_of_n_log2_up_comm. simpl. 
+      assert (Z.pos p <= 2 ^ Z.log2_up (Z.pos p)). { apply z_pow2_log2_up. lia. }
+      lia.
     + lia.
 Qed.
