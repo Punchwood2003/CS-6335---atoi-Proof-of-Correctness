@@ -338,7 +338,6 @@ Proof.
 
   (* 1048664 -> 1048652 and 1048664 -> 1048680 *)
   step. step. step. step.
-    (* ixb, look here *)
     (* 1048664 -> 1048680 - We do NOT take the b.ls branch *)
     destruct PRE as (i & PRE). exists i. destruct PRE; destruct H. rename x into j; rename x0 into k.
     apply zero_lor_zero in BC. destruct BC as (BC1 & BC2). 
@@ -363,64 +362,55 @@ Proof.
     destruct PRE; rename x into j; destruct H; rename x into k;
     destruct H as (DSTART & ALLD & ACC & X4 & MEM); rename p0 into x.
     (* Working with the branch condition *)
+    rewrite MEM in *. exists j, k, j.
     pose BC as X. apply lor_0_or_1 in X. destruct X as [X|X].
-      rewrite X in BC. apply zero_lor_zero in BC. destruct BC as (BC1 & BC2). rewrite MEM in *.
-      apply trivial_if in BC1. apply trivial_if_false in BC2. rewrite BC1. rewrite BC2.
-        2: unfold "~"; intros; discriminate.
-      (* This case is already handled above in the proof for 1048664 -> 1048680.
-         It's impossible for this case to arise and for the code to also branch. 
-         After the above simplification, CF = 1 and ZF = 0. b.ls branches if CF = 0 OR ZF = 1,
-         meaning it's impossible for this branch to have occurred.
-
-         However, I don't know how to prove that and will just admit this case.
-         *)
-      admit.
+      discriminate.
       (* Complete the other 3 possible cases *) 
       rewrite X in BC. clear X. apply lor_1_three_cases in BC. destruct BC as [BC|[BC|BC]]. 
-        destruct BC as (BC1 & BC2); apply N.eqb_eq in BC2. exists j, k, j. unfold inv_digit_multiply. split.
+        destruct BC as (BC1 & BC2); apply N.eqb_eq in BC2. unfold inv_digit_multiply. split.
           (* digit_start *)
           digit_start_persists DSTART.
           (* all_digits *)
           split. assumption.
           (* Prove the current digit is in fact a digit, because we're in the loop. *)
-          split. rewrite MEM in *. unfold is_digit; split; rewrite <- ACC; rewrite BC2.
+          split. unfold is_digit; split; rewrite <- ACC; rewrite BC2.
             apply N.le_sub_l with (n:=57) (m:=9).
             reflexivity.
           (* X1 holds the index of the current char. *)
           split. psimpl; psimpl in ACC. assumption.
           (* X2 holds the digit value of the current char. *)
-          split. psimpl. rewrite BC2. unfold digit_value. psimpl. rewrite MEM in *. rewrite BC2.
+          split. psimpl. rewrite BC2. unfold digit_value. psimpl. rewrite BC2.
           reflexivity.
           (* X4 is 10 (the multiplier). *)
           split. psimpl; assumption.
           (* MEM *)
           psimpl; assumption.
-        destruct BC as (BC1 & BC2); apply N.eqb_eq in BC2. exists j, k, j. unfold inv_digit_multiply.
+        destruct BC as (BC1 & BC2); apply N.eqb_eq in BC2. unfold inv_digit_multiply.
           (* digit_start *)
           split. digit_start_persists DSTART.
           (* all_digits *)
           split. assumption.
           (* Prove the current digit is in fact a digit, because we're in the loop. *)
-          split. rewrite MEM in *. apply N.leb_gt in BC1. rewrite BC2 in BC1. 
+          split. apply N.leb_gt in BC1. rewrite BC2 in BC1. 
           assert (msub 32 57 48 = 9). reflexivity. rewrite H in BC1. apply N.lt_irrefl in BC1.
           exfalso. apply BC1.
           (* X1 holds the index of the current char. *)
           split. psimpl; psimpl in ACC. assumption.
           (* X2 holds the digit value of the current char. *)
-          split. psimpl. rewrite BC2. unfold digit_value. psimpl. rewrite MEM in *. rewrite BC2.
+          split. psimpl. rewrite BC2. unfold digit_value. psimpl. rewrite BC2.
           reflexivity.
           (* X4 is 10 (the multiplier). *)
           split. psimpl; assumption.
           (* MEM *)
           psimpl; assumption.
         (* The current char is a digit between 0-8 *)
-        destruct BC as (BC1 & BC2). apply N.eqb_neq in BC2. exists j, k, j. unfold inv_digit_multiply.
+        destruct BC as (BC1 & BC2). apply N.eqb_neq in BC2. unfold inv_digit_multiply.
           (* digit_start *)
           split. digit_start_persists DSTART.
           (* all_digits *)
           split. assumption.
           (* Prove the current digit is in fact a digit, because we're in the loop. *)
-          rewrite MEM in *. apply N.leb_gt in BC1. apply msub_lt_9 in BC1.
+          apply N.leb_gt in BC1. apply msub_lt_9 in BC1.
           destruct BC1 as (GE48 & LT57).
           split. unfold is_digit; split; rewrite <- ACC.
             assumption.
